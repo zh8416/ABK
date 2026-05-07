@@ -1508,7 +1508,12 @@ jobs:
               if [ "${{ inputs.kernel_version }}" = "6.12" ]; then
                 LTO_FLAG="--lto=none"
               fi
-              tools/bazel build --disk_cache=/home/runner/.cache/bazel --config=fast $LTO_FLAG $FRAG_FLAG //common:kernel_aarch64_dist || exit 1
+              # ABK only packages Image/Image.lz4. The dist target also builds system_dlkm images,
+              # which are unused here and can fail independently of the kernel image.
+              BAZEL_TARGET="//common:kernel_aarch64"
+              tools/bazel build --disk_cache=/home/runner/.cache/bazel --config=fast $LTO_FLAG $FRAG_FLAG "$BAZEL_TARGET" || exit 1
+              test -f ./bazel-bin/common/kernel_aarch64/Image
+              test -f ./bazel-bin/common/kernel_aarch64/Image.lz4
               strings ./bazel-bin/common/kernel_aarch64/Image | grep 'Linux version'
             fi
 
