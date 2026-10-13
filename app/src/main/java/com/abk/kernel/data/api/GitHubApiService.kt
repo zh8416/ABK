@@ -18,6 +18,44 @@ interface GitHubApiService {
         @Path("repo") repo: String
     ): Response<GitHubRepo>
 
+    // 拉取任意仓库单个文件原始内容（用于从 LOS 源码 Makefile 推断内核版本）
+    @GET("repos/{owner}/{repo}/contents/{path}")
+    suspend fun getFileRaw(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path(value = "path", encoded = true) path: String,
+        @Query("ref") ref: String,
+        @Header("Accept") accept: String = "application/vnd.github.raw"
+    ): Response<ResponseBody>
+
+    @GET("repos/{owner}/{repo}/actions/secrets/public-key")
+    suspend fun getRepositorySecretPublicKey(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String
+    ): Response<GitHubSecretPublicKey>
+
+    @GET("repos/{owner}/{repo}/actions/secrets")
+    suspend fun listRepositorySecrets(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Query("per_page") perPage: Int = 100
+    ): Response<GitHubRepositorySecretsResponse>
+
+    @PUT("repos/{owner}/{repo}/actions/secrets/{secret_name}")
+    suspend fun createOrUpdateRepositorySecret(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("secret_name") secretName: String,
+        @Body body: CreateOrUpdateRepositorySecretRequest
+    ): Response<Unit>
+
+    @DELETE("repos/{owner}/{repo}/actions/secrets/{secret_name}")
+    suspend fun deleteRepositorySecret(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("secret_name") secretName: String,
+    ): Response<Unit>
+
     @POST("repos/{owner}/{repo}/forks")
     suspend fun forkRepo(
         @Path("owner") owner: String,
@@ -85,6 +123,13 @@ interface GitHubApiService {
         @Path("run_id") runId: Long
     ): Response<Unit>
 
+    @POST("repos/{owner}/{repo}/actions/runs/{run_id}/cancel")
+    suspend fun cancelWorkflowRun(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("run_id") runId: Long
+    ): Response<Unit>
+
     @GET("repos/{owner}/{repo}/actions/runs/{run_id}/jobs")
     suspend fun listRunJobs(
         @Path("owner") owner: String,
@@ -92,6 +137,22 @@ interface GitHubApiService {
         @Path("run_id") runId: Long,
         @Query("per_page") perPage: Int = 100
     ): Response<WorkflowJobsResponse>
+
+    @Streaming
+    @GET("repos/{owner}/{repo}/actions/jobs/{job_id}/logs")
+    suspend fun downloadJobLogs(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("job_id") jobId: Long
+    ): Response<ResponseBody>
+
+    @Streaming
+    @GET("repos/{owner}/{repo}/actions/runs/{run_id}/logs")
+    suspend fun downloadRunLogs(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("run_id") runId: Long
+    ): Response<ResponseBody>
 
     // ── Artifacts ─────────────────────────────────────────────────────────
     @GET("repos/{owner}/{repo}/actions/runs/{run_id}/artifacts")
@@ -103,12 +164,60 @@ interface GitHubApiService {
     ): Response<ArtifactsResponse>
 
     // ── Releases ─────────────────────────────────────────────────────────
+    @GET("repos/{owner}/{repo}/releases")
+    suspend fun listReleases(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Query("per_page") perPage: Int = 100,
+        @Query("page") page: Int = 1
+    ): Response<List<GitHubReleaseSummary>>
+
     @GET("repos/{owner}/{repo}/releases/tags/{tag}")
     suspend fun getReleaseByTag(
         @Path("owner") owner: String,
         @Path("repo") repo: String,
         @Path("tag") tag: String
     ): Response<GitHubRelease>
+
+    @POST("repos/{owner}/{repo}/releases")
+    suspend fun createRelease(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Body body: CreateReleaseRequest
+    ): Response<GitHubRelease>
+
+    @PATCH("repos/{owner}/{repo}/releases/{release_id}")
+    suspend fun updateRelease(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("release_id") releaseId: Long,
+        @Body body: CreateReleaseRequest
+    ): Response<GitHubRelease>
+
+    @GET("repos/{owner}/{repo}/releases/{release_id}/assets")
+    suspend fun listReleaseAssets(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("release_id") releaseId: Long,
+        @Query("per_page") perPage: Int = 100,
+        @Query("page") page: Int = 1
+    ): Response<List<ReleaseAsset>>
+
+    @DELETE("repos/{owner}/{repo}/releases/assets/{asset_id}")
+    suspend fun deleteReleaseAsset(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("asset_id") assetId: Long
+    ): Response<Unit>
+
+    @Streaming
+    @GET("repos/{owner}/{repo}/releases/assets/{asset_id}")
+    suspend fun downloadReleaseAssetById(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("asset_id") assetId: Long,
+        @Header("Accept") accept: String = "application/octet-stream"
+    ): Response<ResponseBody>
 
     @Streaming
     @GET("repos/{owner}/{repo}/actions/artifacts/{artifact_id}/zip")

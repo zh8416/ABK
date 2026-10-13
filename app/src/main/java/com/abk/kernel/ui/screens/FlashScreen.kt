@@ -1,163 +1,615 @@
+﻿@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package com.abk.kernel.ui.screens
 
+import com.abk.kernel.ui.screens.flash.*
+import android.content.Intent
+import android.net.Uri
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.PredictiveBackHandler
+import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.fadeIn
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Extension
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.FolderSpecial
 import androidx.compose.material.icons.filled.Inbox
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.InstallMobile
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.RunCircle
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Terminal
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import coil.compose.AsyncImage
 import com.abk.kernel.R
+import com.abk.kernel.data.model.ActiveDownloadTask
 import com.abk.kernel.data.model.ArtifactCategory
 import com.abk.kernel.data.model.ArtifactType
 import com.abk.kernel.data.model.BuildArtifact
+import com.abk.kernel.data.model.BuildParameterSummary
+import com.abk.kernel.data.model.BuildProgress
+import com.abk.kernel.utils.BuildProgressUtils
+import com.abk.kernel.data.model.BuildQueueItemStatus
 import com.abk.kernel.data.model.BuildStatus
 import com.abk.kernel.data.model.DownloadedArtifact
+import com.google.gson.Gson
+import com.abk.kernel.data.model.KernelBuildConfig
+import com.abk.kernel.data.model.KernelSupport
+import com.abk.kernel.data.model.PREBUILT_GKI_RUN_ID
+import com.abk.kernel.data.model.PrebuiltGkiAsset
+import com.abk.kernel.data.model.PrebuiltGkiRelease
+import com.abk.kernel.data.model.WorkflowJob
+import com.abk.kernel.data.model.WorkflowRun
+import com.abk.kernel.data.model.WorkflowStep
+import com.abk.kernel.data.model.isActive
+import com.abk.kernel.data.model.isKernelBuild
+import com.abk.kernel.data.model.isManagerBuild
+import com.abk.kernel.data.model.isFailedFlashRun
+import com.abk.kernel.utils.FlashFilter
+import com.abk.kernel.utils.FlashFilterKernelKind
+import com.abk.kernel.utils.FlashFilterManagerKind
+import com.abk.kernel.utils.FlashFilterWorkflowState
+import com.abk.kernel.utils.FlashWorkflowFilter
+import com.abk.kernel.utils.WorkflowPrimary
+import com.abk.kernel.ui.blur.BlurScreenScaffold
+import com.abk.kernel.ui.components.AbkScreenHorizontalPadding
+import com.abk.kernel.ui.components.rememberAbkInteractiveRefreshPresentation
+import com.abk.kernel.ui.components.ObserveChildPageVisibility
+import com.abk.kernel.ui.components.childPageOverlayEnterTransition
+import com.abk.kernel.ui.components.childPageOverlayExitTransition
+import com.abk.kernel.ui.components.childPageScrimExitTransition
+import com.abk.kernel.ui.components.rememberChildPageBackController
+import com.abk.kernel.ui.components.rememberChildPageOverlayTransition
+import com.abk.kernel.utils.FailureLogExtractor
+import com.abk.kernel.ui.components.LIVE_DURATION_MINUTE_HAND_PERIOD_MS
+import com.abk.kernel.ui.components.LiveDurationScheduleIcon
+import com.abk.kernel.ui.components.ShimmerLinearProgress
+import com.abk.kernel.ui.components.liveWorkflowShimmerBrush
+import com.abk.kernel.ui.components.rememberLiveWorkflowShimmerPhase
+import com.abk.kernel.ui.components.MinuteHandController
+import com.abk.kernel.ui.components.MinuteHandControllerHost
+import com.abk.kernel.ui.components.MinuteHandPhase
 import com.abk.kernel.ui.components.ExpressiveEmptyState
 import com.abk.kernel.ui.components.ExpressiveHeroCard
 import com.abk.kernel.ui.components.ExpressiveSectionCard
 import com.abk.kernel.ui.components.ExpressiveStatusChip
 import com.abk.kernel.ui.components.ExpressiveTopBar
+import com.abk.kernel.ui.theme.uiSurfaceColor
 import com.abk.kernel.utils.DownloadUtils
 import com.abk.kernel.utils.RootUtils
+import java.io.File
 import com.abk.kernel.viewmodel.MainViewModel
-import kotlin.coroutines.cancellation.CancellationException
+import com.abk.kernel.viewmodel.mergeWorkflowActiveDownloads
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun FlashScreen(vm: MainViewModel) {
+fun FlashScreen(
+    vm: MainViewModel,
+    outerPadding: PaddingValues = PaddingValues(0.dp),
+    onDetailPageVisibleChange: (Boolean) -> Unit = {},
+) {
     val state by vm.uiState.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    var activeContentTab by rememberSaveable { mutableStateOf(FlashContentTab.Workflows) }
+    val navController = rememberNavController()
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    // NavHost has no back-stack entry for a frame on first composition — treat
+    // null as the list route so we do not flash childPageVisible on tab open.
+    val flashDetailRouteActive = isFlashDetailRoute(currentBackStackEntry?.destination?.route)
+    var navigatingToFlashDetail by remember { mutableStateOf(false) }
     var selectedRunId by remember { mutableStateOf<Long?>(null) }
+    var selectedPrebuiltReleaseId by remember { mutableStateOf<Long?>(null) }
     var selectedItem by remember { mutableStateOf<DownloadedArtifact?>(null) }
     var deleteFileTarget by remember { mutableStateOf<DownloadedArtifact?>(null) }
     var deleteWorkflowTarget by remember { mutableStateOf<WorkflowArtifactGroup?>(null) }
+    var parameterTarget by remember { mutableStateOf<WorkflowArtifactGroup?>(null) }
+    var prebuiltParameterTarget by remember { mutableStateOf<PrebuiltGkiRelease?>(null) }
     var deleteRemoteWorkflowRun by remember { mutableStateOf(false) }
     var showFlashConfirm by remember { mutableStateOf(false) }
+    var manifestNoticeItem by remember { mutableStateOf<DownloadedArtifact?>(null) }
+    val sessionManifestNotices = remember { mutableSetOf<String>() }
+    var flashSecurityPrompt by remember { mutableStateOf<DownloadUtils.FlashSecurityPrompt?>(null) }
+    var allowLegacyBundleFallback by remember { mutableStateOf(false) }
+    var showInstallManagerConfirm by remember { mutableStateOf(false) }
+    var cancelConfirmRunId by remember { mutableStateOf<Long?>(null) }
     var showTerminal by remember { mutableStateOf(false) }
-    var terminalTitle by remember { mutableStateOf("终端") }
+    var selectedAnyKernelSlotTargetName by rememberSaveable {
+        mutableStateOf(RootUtils.Ak3SlotTarget.CURRENT.name)
+    }
+    var terminalTitle by remember { mutableStateOf(context.getString(R.string.flash_terminal)) }
     var terminalCanReboot by remember { mutableStateOf(false) }
     var terminalRunning by remember { mutableStateOf(false) }
     var terminalLog by remember { mutableStateOf<List<String>>(emptyList()) }
     var terminalSuccess by remember { mutableStateOf<Boolean?>(null) }
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val rootGranted = state.rootGranted
-
-    val remoteArtifacts = remember(state.artifacts) {
-        state.artifacts.filter {
-            !it.expired && DownloadUtils.classifyCategory(DownloadUtils.classifyArtifact(it.name)) != null
+    val prebuiltOnlyMode = !state.isLoggedIn
+    val currentContentTab = when {
+        prebuiltOnlyMode -> FlashContentTab.PrebuiltGki
+        state.prebuiltGkiEnabled -> activeContentTab
+        else -> FlashContentTab.Workflows
+    }
+    val supportsAnyKernelInactiveSlot by produceState(initialValue = false, rootGranted) {
+        value = withContext(Dispatchers.IO) { RootUtils.supportsAnyKernelInactiveSlot() }
+    }
+    val selectedAnyKernelSlotTarget = runCatching {
+        RootUtils.Ak3SlotTarget.valueOf(selectedAnyKernelSlotTargetName)
+    }.getOrDefault(RootUtils.Ak3SlotTarget.CURRENT)
+    val flashAnyKernelCurrentSlotLabel = stringResource(R.string.root_patch_ak3_slot_current)
+    val flashAnyKernelInactiveSlotLabel = stringResource(R.string.root_patch_ak3_slot_inactive)
+    val workflowActiveDownloads = remember(
+        state.activeDownloadTasks,
+        state.downloadProgress,
+        state.artifacts,
+    ) {
+        mergeWorkflowActiveDownloads(
+            tasks = state.activeDownloadTasks,
+            progress = state.downloadProgress,
+            artifacts = state.artifacts,
+        )
+    }
+    val pendingAutoDownloadRun = remember(state.pendingAutoDownloadRunId, state.recentRuns) {
+        state.recentRuns.firstOrNull { it.id == state.pendingAutoDownloadRunId }
+    }
+    val remoteArtifacts = remember(state.artifacts, state.isLoggedIn) {
+        if (!state.isLoggedIn) {
+            emptyList()
+        } else {
+            state.artifacts.filter {
+                !it.expired && DownloadUtils.classifyCategory(DownloadUtils.classifyArtifact(it.name)) != null
+            }
         }
     }
-    val workflowGroups = remember(remoteArtifacts, state.downloadedArtifacts) {
-        buildWorkflowGroups(remoteArtifacts, state.downloadedArtifacts)
+    val workflowDownloadedArtifacts = remember(state.downloadedArtifacts, state.prebuiltGkiEnabled, state.isLoggedIn) {
+        if (!state.isLoggedIn) {
+            emptyList()
+        } else if (state.prebuiltGkiEnabled) {
+            state.downloadedArtifacts.filterNot { it.runId == PREBUILT_GKI_RUN_ID }
+        } else {
+            state.downloadedArtifacts
+        }
     }
-    val selectedGroup = selectedRunId?.let { id -> workflowGroups.firstOrNull { it.runId == id } }
+    var ghostFailedSheetRunId by remember { mutableStateOf<Long?>(null) }
+    val ghostFailedVisible = ghostFailedSheetRunId != null
+    val ghostFailedPageTransition = rememberChildPageOverlayTransition(
+        visible = ghostFailedVisible,
+        label = "flash-failed-workflow",
+    )
+    val flashListScrollState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    val unlinkedWorkflowTitle = stringResource(R.string.workflow_unlinked)
+    val recentRunById = remember(state.recentRuns, state.sessionGhostFailedRuns) {
+        state.recentRuns.associateBy { it.id } + state.sessionGhostFailedRuns
+    }
+    val workflowGroups = remember(remoteArtifacts, workflowDownloadedArtifacts, unlinkedWorkflowTitle, recentRunById) {
+        buildWorkflowGroups(remoteArtifacts, workflowDownloadedArtifacts, unlinkedWorkflowTitle, recentRunById)
+    }
+    val allWorkflowGroups = remember(workflowGroups, state.sessionGhostFailedRuns, state.dismissedFailedRunIds, recentRunById) {
+        val placeholderRunIds = state.recentRuns
+            .filter {
+                (it.isActive() && (it.isKernelBuild() || it.isManagerBuild())) ||
+                    it.isSuccessfulKernelFlashRun()
+            }
+            .map { it.id }
+            .toSet()
+        val extraGroups = placeholderRunIds
+            .filter { id -> workflowGroups.none { it.runId == id } }
+            .mapNotNull { id ->
+                val run = recentRunById[id] ?: return@mapNotNull null
+                emptyWorkflowGroupFor(run, unlinkedWorkflowTitle)
+            }
+        val ghostRunIds = state.sessionGhostFailedRuns.keys
+            .filter { it !in state.dismissedFailedRunIds }
+            .toSet()
+        val extraGhostGroups = ghostRunIds
+            .filter { id -> workflowGroups.none { it.runId == id } && id !in placeholderRunIds }
+            .mapNotNull { id ->
+                val run = recentRunById[id] ?: return@mapNotNull null
+                emptyWorkflowGroupFor(run, unlinkedWorkflowTitle)
+            }
+        (workflowGroups + extraGroups + extraGhostGroups)
+            .filter { group ->
+                if (group.runId in state.dismissedFailedRunIds) {
+                    return@filter false
+                }
+                val run = recentRunById[group.runId]
+                if (run.isAbkManagerFlashRun(group.runTitle)) {
+                    return@filter false
+                }
+                val isActive = run?.isActive() == true
+                val isActiveFlashRun = isActive &&
+                    (run?.isKernelBuild() == true || run?.isManagerBuild() == true)
+                val isSessionGhost = group.runId in state.sessionGhostFailedRuns
+                isActiveFlashRun || isSessionGhost || group.shouldAppearInWorkflowList(run)
+            }
+            .sortedForWorkflowDisplay(recentRunById)
+    }
+    var filter by rememberSaveable(stateSaver = FlashFilterSaver) { mutableStateOf(FlashFilter()) }
+    var dismissingFailedRunId by remember { mutableStateOf<Long?>(null) }
+    // rememberSaveable survives rotation/savedInstanceState but not process
+    // death. Persist to DataStore so the filter choice carries across cold
+    // starts. Gate the auto-save on `filterLoaded` so the dispatched default
+    // FlashFilter() doesn't overwrite the persisted value before the load
+    // coroutine finishes.
+    var filterLoaded by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        if (!filterLoaded) {
+            vm.loadFlashFilterJson()?.toFlashFilterOrNull()?.let { filter = it }
+            filterLoaded = true
+        }
+    }
+    LaunchedEffect(filter, filterLoaded) {
+        if (filterLoaded) vm.saveFlashFilterJson(filter.toJsonString())
+    }
+    var filterMenuExpanded by remember { mutableStateOf(false) }
+    val dispatchedConfigByRunId = remember(state.buildQueue) {
+        state.buildQueue
+            .filter { it.runId > 0L }
+            .associate { it.runId to it.config }
+    }
+    // While a build is mid-dispatch (queue item exists but runId hasn't been
+    // assigned yet via findAndMonitorLatestRun) we can't key by runId, but we
+    // still want the kernel / SUSFS chips to reflect the dispatched config.
+    // Use the most recent DISPATCHING/RUNNING queue item as a fallback for
+    // active runs whose runId isn't in the map yet.
+    // Only the workflow currently being linked (DISPATCHING, no runId yet) may
+    // borrow queue config. Using the first RUNNING item picked the still-active
+    // kernel build when a manager workflow started afterward.
+    val linkingDispatchedConfig = remember(state.buildQueue) {
+        state.buildQueue
+            .firstOrNull {
+                it.status == BuildQueueItemStatus.DISPATCHING && it.runId <= 0L
+            }
+            ?.config
+    }
+    val dispatchedVariantByRunId = remember(dispatchedConfigByRunId) {
+        dispatchedConfigByRunId.mapValues { it.value.kernelsuVariant }
+    }
+    val filteredGroups by produceState(
+        initialValue = allWorkflowGroups,
+        allWorkflowGroups,
+        filter,
+        state.buildParameterSummaries,
+        recentRunById,
+        dispatchedVariantByRunId,
+        linkingDispatchedConfig
+    ) {
+        value = withContext(Dispatchers.Default) {
+            allWorkflowGroups.filter { group ->
+                val run = recentRunById[group.runId]
+                val summary = state.buildParameterSummaries[group.runId]
+                val primary = FlashWorkflowFilter.primaryKind(
+                    run = run,
+                    runTitle = group.runTitle,
+                    hasKernelArtifact = group.hasKernelArtifact(),
+                    hasManagerArtifact = group.hasManagerArtifact()
+                )
+                val dispatchedVariantFallback = dispatchedVariantByRunId[group.runId]
+                    ?: if (run?.isActive() == true &&
+                        FlashWorkflowFilter.shouldUsePendingDispatchedConfig(run, group.hasKernelArtifact())
+                    ) {
+                        linkingDispatchedConfig?.kernelsuVariant
+                    } else {
+                        null
+                    }
+                val kKind = FlashWorkflowFilter.kernelKind(
+                    summary = summary,
+                    fallbackVariant = dispatchedVariantFallback
+                )
+                val mKind = FlashWorkflowFilter.managerKind(
+                    run = run,
+                    runTitle = group.runTitle,
+                    remoteArtifactNames = group.remote.map { it.name },
+                    localArtifactNames = group.local.map { it.name },
+                    summary = summary
+                )
+                val workflowState = run.workflowState()
+                FlashWorkflowFilter.matchesFilter(
+                    primary = primary,
+                    filter = filter,
+                    kernelKind = kKind,
+                    managerKind = mKind,
+                    workflowState = workflowState
+                )
+            }
+        }
+    }
+    val visibleWorkflowGroups by produceState(
+        initialValue = limitWorkflowGroupsForDisplay(allWorkflowGroups, recentRunById),
+        filteredGroups,
+        recentRunById
+    ) {
+        value = withContext(Dispatchers.Default) {
+            limitWorkflowGroupsForDisplay(filteredGroups, recentRunById)
+        }
+    }
+    val shouldPrefetchWorkflowSummaries = remember(filter) {
+        filter.kernelEnabled && filter.kernelKinds.isNotEmpty()
+    }
+    // Summary prefetch is only needed when an active filter depends on summary
+    // data. Avoiding eager log fetches keeps the workflow list smooth.
+    LaunchedEffect(visibleWorkflowGroups.map { it.runId }, shouldPrefetchWorkflowSummaries) {
+        if (!shouldPrefetchWorkflowSummaries) return@LaunchedEffect
+        delay(200)
+        visibleWorkflowGroups.forEach { group ->
+            val run = recentRunById[group.runId]
+            if (group.shouldShowParameterDetails(run)) {
+                vm.loadBuildParameterSummary(group.runId)
+            }
+            delay(150)
+        }
+    }
+    val selectedGroup = selectedRunId?.let { id -> allWorkflowGroups.firstOrNull { it.runId == id } }
+    val selectedPrebuiltRelease = selectedPrebuiltReleaseId?.let { id ->
+        state.prebuiltGkiReleases.firstOrNull { it.id == id }
+    }
 
     fun returnToWorkflowList() {
         selectedRunId = null
+        navController.popBackStack()
     }
 
-    BackHandler(enabled = selectedRunId != null, onBack = ::returnToWorkflowList)
-    PredictiveBackHandler(enabled = selectedRunId != null) { progress ->
-        try {
-            progress.collect { }
-            returnToWorkflowList()
-        } catch (_: CancellationException) {
+    fun returnToPrebuiltReleaseList() {
+        selectedPrebuiltReleaseId = null
+        navController.popBackStack()
+    }
+
+    fun returnToTopList() {
+        selectedRunId = null
+        selectedPrebuiltReleaseId = null
+        navController.navigate(FLASH_ROUTE_LIST) {
+            popUpTo(FLASH_ROUTE_LIST) { inclusive = false }
+            launchSingleTop = true
         }
     }
 
-    LaunchedEffect(state.forkRepo?.fullName) {
-        if (state.forkRepo != null) vm.loadRecentRuns()
+    val closeGhostFailedWorkflow: () -> Unit = {
+        val dismissedRunId = ghostFailedSheetRunId
+        ghostFailedSheetRunId = null
+        if (dismissedRunId != null && flashDetailRouteActive && selectedRunId == dismissedRunId) {
+            returnToWorkflowList()
+        }
+    }
+    val ghostFailedPageBack = rememberChildPageBackController(
+        enabled = ghostFailedVisible,
+        predictiveBackEnabled = state.predictiveBackEnabled,
+        onBack = closeGhostFailedWorkflow,
+    )
+
+    ObserveChildPageVisibility(
+        visible = flashDetailRouteActive,
+        onVisibleChange = { detailVisible ->
+            onDetailPageVisibleChange(detailVisible || ghostFailedPageTransition.currentState)
+        },
+    )
+
+    ObserveChildPageVisibility(
+        transition = ghostFailedPageTransition,
+        onVisibleChange = { failedVisible ->
+            onDetailPageVisibleChange(flashDetailRouteActive || failedVisible)
+        },
+        onAfterExitAnimation = { ghostFailedPageBack.resetProgress() },
+    )
+
+    LaunchedEffect(flashDetailRouteActive) {
+        if (flashDetailRouteActive) navigatingToFlashDetail = false
     }
 
-    LaunchedEffect(workflowGroups, selectedRunId) {
-        if (selectedRunId != null && selectedGroup == null) selectedRunId = null
+    BackHandler(enabled = navigatingToFlashDetail) {
+        navigatingToFlashDetail = false
+        if (flashDetailRouteActive) {
+            navController.popBackStack()
+        } else {
+            onDetailPageVisibleChange(ghostFailedPageTransition.currentState)
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            navigatingToFlashDetail = false
+            onDetailPageVisibleChange(false)
+        }
+    }
+
+    LaunchedEffect(state.isLoggedIn, state.forkRepo?.fullName) {
+        if (state.isLoggedIn && state.forkRepo != null) {
+            vm.loadRecentRuns(
+                showRefreshIndicator = false,
+                lightweight = true,
+                includeCompletedArtifacts = true,
+            )
+        }
+    }
+
+    LaunchedEffect(state.prebuiltGkiEnabled) {
+        if (!state.prebuiltGkiEnabled) {
+            activeContentTab = FlashContentTab.Workflows
+            selectedPrebuiltReleaseId = null
+            navController.navigate(FLASH_ROUTE_LIST) {
+                popUpTo(FLASH_ROUTE_LIST) { inclusive = false }
+                launchSingleTop = true
+            }
+        }
+    }
+
+    LaunchedEffect(supportsAnyKernelInactiveSlot) {
+        if (!supportsAnyKernelInactiveSlot) {
+            selectedAnyKernelSlotTargetName = RootUtils.Ak3SlotTarget.CURRENT.name
+        }
+    }
+
+    LaunchedEffect(currentContentTab, state.prebuiltGkiEnabled) {
+        if (currentContentTab == FlashContentTab.PrebuiltGki && state.prebuiltGkiEnabled) {
+            vm.loadPrebuiltGkiReleases()
+        }
+    }
+
+    LaunchedEffect(
+        allWorkflowGroups,
+        selectedRunId,
+        state.sessionGhostFailedRuns,
+        state.dismissedFailedRunIds,
+        recentRunById,
+        flashDetailRouteActive,
+    ) {
+        val runId = selectedRunId ?: return@LaunchedEffect
+        if (selectedGroup != null) return@LaunchedEffect
+        if (runId in state.dismissedFailedRunIds) {
+            returnToTopList()
+            return@LaunchedEffect
+        }
+        if (runId in state.sessionGhostFailedRuns) return@LaunchedEffect
+        val run = recentRunById[runId]
+        if (run?.isFailedFlashRun() == true) return@LaunchedEffect
+        if (flashDetailRouteActive && run != null) return@LaunchedEffect
+        returnToTopList()
+    }
+
+    LaunchedEffect(state.prebuiltGkiReleases, selectedPrebuiltReleaseId) {
+        if (selectedPrebuiltReleaseId != null && selectedPrebuiltRelease == null) returnToTopList()
     }
 
     fun showFailure(title: String, lines: List<String>) {
@@ -172,84 +624,373 @@ fun FlashScreen(vm: MainViewModel) {
     fun copyDownloadedFilePath(item: DownloadedArtifact) {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         clipboard.setPrimaryClip(ClipData.newPlainText(item.name, item.filePath))
-        Toast.makeText(context, "已复制文件路径", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.flash_copy_path_done), Toast.LENGTH_SHORT).show()
     }
 
-    fun installManager(item: DownloadedArtifact) {
-        val ok = DownloadUtils.installApk(context, item.filePath)
-        if (!ok) {
-            showFailure(
-                "无法安装 APK",
-                listOf(
-                    "${'$'} install ${item.filePath}",
-                    "系统 APK 安装器不可用，或当前 ROM 阻止了外部 APK 安装请求。",
-                    "文件: ${item.name}"
-                )
-            )
+    fun appendTerminalOutput(line: String) {
+        scope.launch(Dispatchers.Main.immediate) {
+            terminalLog = terminalLog + line
         }
     }
 
-    fun startFlash(item: DownloadedArtifact) {
+    fun requestInstallManager(item: DownloadedArtifact) {
+        selectedItem = item
+        showInstallManagerConfirm = true
+    }
+
+    suspend fun executeWithPreparedArtifact(
+        item: DownloadedArtifact,
+        allowHighRiskFallback: Boolean = false,
+        block: (DownloadUtils.PreparedDownloadedArtifact) -> RootUtils.ShellResult
+    ): RootUtils.ShellResult = withContext(Dispatchers.IO) {
+        val prepared = DownloadUtils.prepareDownloadedArtifact(
+            context = context,
+            artifact = item,
+            allowHighRiskFallback = allowHighRiskFallback,
+            signingVerificationEnabled = state.artifactSigningVerificationEnabled
+        )
+        try {
+            if (prepared.cleanupDir != null) {
+                appendTerminalOutput("[ABK] 已解包下载包到缓存目录")
+                appendTerminalOutput("[ABK] Payload: ${prepared.file.absolutePath}")
+                if (prepared.dependencyModules.isNotEmpty()) {
+                    appendTerminalOutput("[ABK] 附带 Magisk 依赖模块: ${prepared.dependencyModules.joinToString { it.name }}")
+                }
+                if (prepared.dependencyApps.isNotEmpty()) {
+                    appendTerminalOutput("[ABK] 附带扩展应用: ${prepared.dependencyApps.joinToString { it.name }}")
+                }
+            }
+            block(prepared)
+        } finally {
+            prepared.cleanupDir?.deleteRecursively()
+        }
+    }
+
+    fun installManager(item: DownloadedArtifact) {
         if (!rootGranted) {
             showFailure(
-                "Root 未授权",
+                context.getString(R.string.flash_root_unauthorized),
                 listOf(
-                    "${'$'} ${flashCommandPreview(item)}",
-                    "当前处于部分激活状态，文件页只允许查看已下载文件。",
-                    "如需刷写或安装模块，请先授予 Root 权限。"
+                    "${'$'} pm install -r ${item.name}",
+                    context.getString(R.string.flash_partial_files_only),
+                    context.getString(R.string.flash_grant_root_install_manager)
                 )
             )
             return
         }
-        terminalTitle = flashOperationLabel(item.type)
-        terminalCanReboot = true
+        terminalTitle = context.getString(R.string.flash_install_manager_apk)
+        terminalCanReboot = false
         terminalRunning = true
         terminalSuccess = null
         terminalLog = listOf(
-            "${'$'} ${flashCommandPreview(item)}",
+            "${'$'} pm install -r ${item.name}",
             "file: ${item.filePath}",
             "",
-            "等待 root shell 返回，请不要退出应用..."
+            context.getString(R.string.flash_wait_root_shell)
         )
-        showTerminal = true
+            showTerminal = true
         scope.launch {
-            val result = withContext(Dispatchers.IO) {
-                runCatching {
-                    when (item.type) {
-                        ArtifactType.KERNEL_IMG -> RootUtils.flashImage(item.filePath)
-                        ArtifactType.ANYKERNEL3 -> RootUtils.flashAnyKernel3(context, item.filePath)
-                        ArtifactType.SUSFS_MODULE -> RootUtils.installModule(item.filePath)
-                        ArtifactType.KSU_MANAGER -> RootUtils.ShellResult(false, listOf("APK 请通过系统安装器安装"))
-                        else -> RootUtils.ShellResult(false, listOf("不支持此文件类型的自动刷写"))
-                    }
-                }.getOrElse { error ->
-                    RootUtils.ShellResult(false, listOf(error.message ?: error::class.java.simpleName))
+            val result = runCatching {
+                executeWithPreparedArtifact(item) { prepared ->
+                    RootUtils.installApk(context, prepared.file.absolutePath, ::appendTerminalOutput)
                 }
+            }.getOrElse { error ->
+                RootUtils.ShellResult(false, listOf(error.message ?: error::class.java.simpleName))
             }
             terminalRunning = false
             terminalSuccess = result.success
             terminalLog = listOf(
-                "${'$'} ${flashCommandPreview(item)}",
+                "${'$'} pm install -r ${item.name}",
                 "file: ${item.filePath}",
                 ""
             ) + result.output.ifEmpty {
-                listOf(if (result.success) "命令执行完成，无输出。" else "命令执行失败，但未返回日志。")
+                listOf(
+                    if (result.success) {
+                        context.getString(R.string.flash_command_done_no_output)
+                    } else {
+                        context.getString(R.string.flash_command_failed_no_log)
+                    }
+                )
             }
         }
     }
 
-    if (showFlashConfirm && selectedItem != null) {
-        val item = selectedItem!!
+    fun startFlash(
+        item: DownloadedArtifact,
+        anyKernelSlotTarget: RootUtils.Ak3SlotTarget = RootUtils.Ak3SlotTarget.CURRENT,
+        allowHighRiskFallback: Boolean = false
+    ) {
+        if (!rootGranted) {
+            showFailure(
+                context.getString(R.string.flash_root_unauthorized),
+                listOf(
+                    "${'$'} ${flashCommandPreview(item, anyKernelSlotTarget)}",
+                    context.getString(R.string.flash_partial_files_only),
+                    context.getString(R.string.flash_grant_root_flash)
+                )
+            )
+            return
+        }
+        terminalTitle = context.getString(flashOperationLabelRes(item.type))
+        terminalCanReboot = true
+        terminalRunning = true
+        terminalSuccess = null
+        val slotLog = if (item.type == ArtifactType.ANYKERNEL3) {
+            listOf(
+                context.getString(
+                    R.string.root_patch_log_slot,
+                    when (anyKernelSlotTarget) {
+                        RootUtils.Ak3SlotTarget.INACTIVE -> flashAnyKernelInactiveSlotLabel
+                        RootUtils.Ak3SlotTarget.CURRENT -> flashAnyKernelCurrentSlotLabel
+                    }
+                )
+            )
+        } else {
+            emptyList()
+        }
+        terminalLog = listOf(
+            "${'$'} ${flashCommandPreview(item, anyKernelSlotTarget)}",
+            "file: ${item.filePath}",
+        ) + slotLog + listOf(
+            "",
+            context.getString(R.string.flash_wait_root_shell)
+        )
+        showTerminal = true
+        scope.launch {
+            val result = runCatching {
+                executeWithPreparedArtifact(item, allowHighRiskFallback) { prepared ->
+                    val flashType = prepared.resolvedType ?: item.type
+                    if (flashType == ArtifactType.KERNEL_IMG || flashType == ArtifactType.ANYKERNEL3) {
+                        prepared.dependencyApps.forEach { dependency ->
+                            appendTerminalOutput("[ABK] 先安装依赖扩展应用: ${dependency.name}")
+                            val dependencyResult = RootUtils.installApk(context, dependency.absolutePath, ::appendTerminalOutput)
+                            if (!dependencyResult.success) {
+                                return@executeWithPreparedArtifact dependencyResult
+                            }
+                        }
+                        prepared.dependencyModules.forEach { dependency ->
+                            appendTerminalOutput("[ABK] 先安装依赖模块: ${dependency.name}")
+                            val dependencyResult = RootUtils.installModule(dependency.absolutePath, ::appendTerminalOutput)
+                            if (!dependencyResult.success) {
+                                return@executeWithPreparedArtifact dependencyResult
+                            }
+                        }
+                    }
+                    when (flashType) {
+                        ArtifactType.KERNEL_IMG -> RootUtils.flashImage(prepared.file.absolutePath, onOutput = ::appendTerminalOutput)
+                        ArtifactType.ANYKERNEL3 -> RootUtils.flashAnyKernel3(
+                            context,
+                            prepared.file.absolutePath,
+                            targetSlot = anyKernelSlotTarget,
+                            onOutput = ::appendTerminalOutput
+                        )
+                        ArtifactType.SUSFS_MODULE -> RootUtils.installModule(prepared.file.absolutePath, ::appendTerminalOutput)
+                        ArtifactType.KSU_MANAGER -> RootUtils.installApk(context, prepared.file.absolutePath, ::appendTerminalOutput)
+                        ArtifactType.ABK_MANAGER ->
+                            RootUtils.ShellResult(false, listOf(context.getString(R.string.flash_unsupported_auto_flash)))
+                        else -> RootUtils.ShellResult(false, listOf(context.getString(R.string.flash_unsupported_auto_flash)))
+                    }
+                }
+            }.getOrElse { error ->
+                RootUtils.ShellResult(false, listOf(error.message ?: error::class.java.simpleName))
+            }
+            allowLegacyBundleFallback = false
+            terminalRunning = false
+            terminalSuccess = result.success
+            terminalLog = listOf(
+                "${'$'} ${flashCommandPreview(item, anyKernelSlotTarget)}",
+                "file: ${item.filePath}",
+            ) + slotLog + listOf(
+                ""
+            ) + result.output.ifEmpty {
+                listOf(
+                    if (result.success) {
+                        context.getString(R.string.flash_command_done_no_output)
+                    } else {
+                        context.getString(R.string.flash_command_failed_no_log)
+                    }
+                )
+            }
+        }
+    }
+
+    fun requestFlash(item: DownloadedArtifact) {
+        selectedItem = item
+        allowLegacyBundleFallback = false
+        flashSecurityPrompt = DownloadUtils.precheckFlashSecurity(
+            context = context,
+            artifact = item,
+            signingVerificationEnabled = state.artifactSigningVerificationEnabled,
+        )
+        if (flashSecurityPrompt == null) {
+            showFlashConfirm = true
+        }
+    }
+
+    LaunchedEffect(state.downloadedArtifacts, flashDetailRouteActive, selectedRunId, allWorkflowGroups) {
+        // Manifest notices belong to a specific downloaded artifact. Do not
+        // interrupt the flash list as soon as the tab opens; wait until the
+        // user explicitly opens that workflow's detail page.
+        val candidates = manifestNoticeCandidates(flashDetailRouteActive, selectedRunId, allWorkflowGroups)
+        if (candidates.isEmpty()) {
+            manifestNoticeItem = null
+            return@LaunchedEffect
+        }
+        for (item in candidates) {
+            val file = File(item.filePath)
+            if (!file.isFile) continue
+            val key = withContext(Dispatchers.IO) { DownloadUtils.fileSha256Hex(file) }
+            if (sessionManifestNotices.add(key)) {
+                manifestNoticeItem = item
+                break
+            }
+        }
+    }
+
+    manifestNoticeItem?.let { item ->
+        val source = item.manifestKernelSource?.let { runCatching { Gson().fromJson(it, com.abk.kernel.utils.KernelSourceManifest::class.java) }.getOrNull() }
+        val feature = item.manifestFeatureStatus?.let { runCatching { Gson().fromJson(it, com.abk.kernel.utils.FeatureStatusManifest::class.java) }.getOrNull() }
+        AlertDialog(
+            onDismissRequest = { manifestNoticeItem = null },
+            icon = { Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary) },
+            title = { Text(stringResource(R.string.flash_custom_source_notice_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    source?.url?.let { Text(stringResource(R.string.flash_custom_source_url, it)) }
+                    if (source?.access == "github_private") {
+                        Text(
+                            stringResource(R.string.flash_custom_source_private_warning),
+                            color = MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    source?.requestedRef?.let { Text(stringResource(R.string.flash_custom_source_ref, it)) }
+                    source?.resolvedCommit?.let { Text(stringResource(R.string.flash_custom_source_commit, it)) }
+                    source?.kernelVersion?.let { kernel ->
+                        Text(stringResource(R.string.flash_custom_source_kernel, source.androidVersion.orEmpty(), kernel))
+                    }
+                    source?.toolchainPatchLevel?.let {
+                        Text(stringResource(R.string.flash_custom_source_toolchain, it))
+                    }
+                    source?.deviceLabel?.takeIf { it.isNotBlank() }?.let {
+                        Text(stringResource(R.string.flash_custom_source_device, it))
+                    }
+                    source?.defconfigs?.takeIf { it.isNotEmpty() }?.let { defconfigs ->
+                        Text(stringResource(R.string.flash_custom_source_defconfigs, defconfigs.joinToString(" -> ")))
+                    }
+                    feature?.requested?.takeIf { it.isNotEmpty() }?.let {
+                        Text(stringResource(R.string.flash_custom_source_requested, formatManifestFeatureMap(it)))
+                    }
+                    feature?.effective?.takeIf { it.isNotEmpty() }?.let {
+                        Text(stringResource(R.string.flash_custom_source_effective, formatManifestFeatureMap(it)))
+                    }
+                    feature?.skipped?.takeIf { it.isNotEmpty() }?.let { skippedFeatures ->
+                        Text(stringResource(R.string.flash_custom_source_skipped_title), fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.error)
+                        skippedFeatures.forEach { skipped ->
+                            Text("• ${skipped.id}: ${skipped.message}", color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                    Text(
+                        stringResource(R.string.flash_custom_source_old_client_warning),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { manifestNoticeItem = null }) { Text(stringResource(R.string.confirm)) }
+            }
+        )
+    }
+
+    if (showFlashConfirm) {
+        val item = selectedItem
+        if (item != null) {
         AlertDialog(
             onDismissRequest = { showFlashConfirm = false },
             icon = { Icon(Icons.Default.Warning, null, tint = MaterialTheme.colorScheme.error) },
             title = { Text(stringResource(R.string.flash_confirm)) },
-            text = { Text(stringResource(R.string.flash_confirm_msg)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(stringResource(R.string.flash_confirm_msg))
+                    if (item.manifestClientNotice != null) {
+                        val source = item.manifestKernelSource?.let { runCatching { Gson().fromJson(it, com.abk.kernel.utils.KernelSourceManifest::class.java) }.getOrNull() }
+                        val feature = item.manifestFeatureStatus?.let { runCatching { Gson().fromJson(it, com.abk.kernel.utils.FeatureStatusManifest::class.java) }.getOrNull() }
+                        Text(stringResource(R.string.flash_custom_source_review_before_flash), fontWeight = FontWeight.SemiBold)
+                        source?.url?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                        if (source?.access == "github_private") {
+                            Text(
+                                stringResource(R.string.flash_custom_source_private_warning),
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        source?.requestedRef?.let { Text(stringResource(R.string.flash_custom_source_ref, it), style = MaterialTheme.typography.bodySmall) }
+                        source?.resolvedCommit?.let { Text(stringResource(R.string.flash_custom_source_commit, it), style = MaterialTheme.typography.bodySmall) }
+                        source?.deviceLabel?.takeIf { it.isNotBlank() }?.let {
+                            Text(stringResource(R.string.flash_custom_source_device, it), style = MaterialTheme.typography.bodySmall)
+                        }
+                        feature?.requested?.takeIf { it.isNotEmpty() }?.let {
+                            Text(stringResource(R.string.flash_custom_source_requested, formatManifestFeatureMap(it)), style = MaterialTheme.typography.bodySmall)
+                        }
+                        feature?.effective?.takeIf { it.isNotEmpty() }?.let {
+                            Text(stringResource(R.string.flash_custom_source_effective, formatManifestFeatureMap(it)), style = MaterialTheme.typography.bodySmall)
+                        }
+                        feature?.skipped.orEmpty().forEach { skipped ->
+                            Text("! ${skipped.id}: ${skipped.message}", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Text(
+                            stringResource(R.string.flash_custom_source_old_client_warning),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (item.type == ArtifactType.ANYKERNEL3 && supportsAnyKernelInactiveSlot) {
+                        Text(
+                            text = stringResource(R.string.root_patch_ak3_slot_title),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectedAnyKernelSlotTargetName = RootUtils.Ak3SlotTarget.CURRENT.name
+                                },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedAnyKernelSlotTarget == RootUtils.Ak3SlotTarget.CURRENT,
+                                onClick = {
+                                    selectedAnyKernelSlotTargetName = RootUtils.Ak3SlotTarget.CURRENT.name
+                                }
+                            )
+                            Text(flashAnyKernelCurrentSlotLabel)
+                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectedAnyKernelSlotTargetName = RootUtils.Ak3SlotTarget.INACTIVE.name
+                                },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedAnyKernelSlotTarget == RootUtils.Ak3SlotTarget.INACTIVE,
+                                onClick = {
+                                    selectedAnyKernelSlotTargetName = RootUtils.Ak3SlotTarget.INACTIVE.name
+                                }
+                            )
+                            Text(flashAnyKernelInactiveSlotLabel)
+                        }
+                    }
+                }
+            },
             confirmButton = {
                 Button(
                     onClick = {
                         showFlashConfirm = false
-                        startFlash(item)
+                        startFlash(item, selectedAnyKernelSlotTarget, allowLegacyBundleFallback)
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) { Text(stringResource(R.string.flash_confirm)) }
@@ -258,19 +999,109 @@ fun FlashScreen(vm: MainViewModel) {
                 TextButton(onClick = { showFlashConfirm = false }) { Text(stringResource(R.string.cancel)) }
             }
         )
+        }
     }
 
-    state.error?.let { error ->
+    flashSecurityPrompt?.let { prompt ->
+        val item = selectedItem
+        if (item != null) {
+            AlertDialog(
+                onDismissRequest = { flashSecurityPrompt = null },
+                icon = { Icon(Icons.Default.Warning, null, tint = MaterialTheme.colorScheme.error) },
+                title = { Text(stringResource(R.string.flash_confirm)) },
+                text = {
+                    Text(prompt.message)
+                },
+                confirmButton = {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(onClick = { flashSecurityPrompt = null }) {
+                            Text(stringResource(R.string.cancel))
+                        }
+                        Button(
+                            onClick = {
+                                flashSecurityPrompt = null
+                                allowLegacyBundleFallback = true
+                                showFlashConfirm = true
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                        ) { Text(stringResource(R.string.flash_confirm)) }
+                    }
+                }
+            )
+        }
+    }
+
+    if (showInstallManagerConfirm) {
+        val item = selectedItem
+        if (item != null) {
         AlertDialog(
-            onDismissRequest = { vm.clearError() },
-            icon = { Icon(Icons.Default.Error, null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("操作失败") },
-            text = { Text(error) },
+            onDismissRequest = { showInstallManagerConfirm = false },
+            icon = { Icon(Icons.Default.Warning, null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text(stringResource(R.string.flash_confirm_install_manager)) },
+            text = { Text(stringResource(R.string.flash_confirm_install_manager_msg)) },
             confirmButton = {
-                TextButton(onClick = { vm.clearError() }) {
-                    Text("知道了")
+                Button(
+                    onClick = {
+                        showInstallManagerConfirm = false
+                        installManager(item)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text(stringResource(R.string.flash_confirm_install_manager)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showInstallManagerConfirm = false }) {
+                    Text(stringResource(R.string.cancel))
                 }
             }
+        )
+        }
+    }
+
+    // Cancel-build confirmation dialog. Styled to match the flash confirm
+    // above (Warning icon, error-tinted confirm). Tapping the big cancel
+    // button inside the in-progress workflow detail surfaces this rather
+    // than firing the cancel request immediately.
+    cancelConfirmRunId?.let { confirmRunId ->
+        AlertDialog(
+            onDismissRequest = { cancelConfirmRunId = null },
+            icon = { Icon(Icons.Default.Warning, null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text(stringResource(R.string.flash_cancel_confirm_title)) },
+            text = { Text(stringResource(R.string.flash_cancel_confirm_msg)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        cancelConfirmRunId = null
+                        vm.cancelWorkflowRun(confirmRunId)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text(stringResource(R.string.flash_cancel_confirm_yes)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { cancelConfirmRunId = null }) { Text(stringResource(R.string.cancel)) }
+            }
+        )
+    }
+
+    dismissingFailedRunId?.let { runId ->
+        val hasFiles = hasDownloadedFilesForRun(
+            runId = runId,
+            downloadedArtifacts = state.downloadedArtifacts,
+            workflowGroups = allWorkflowGroups,
+            activeDownloadTasks = state.activeDownloadTasks,
+        )
+        DismissFailedRunDialog(
+            hasDownloadedFiles = hasFiles,
+            onConfirm = { deleteFiles ->
+                vm.dismissFailedWorkflow(runId, deleteFiles)
+                dismissingFailedRunId = null
+                if (ghostFailedSheetRunId == runId) {
+                    ghostFailedSheetRunId = null
+                }
+                if (selectedRunId == runId) {
+                    returnToWorkflowList()
+                }
+            },
+            onDismiss = { dismissingFailedRunId = null },
         )
     }
 
@@ -278,8 +1109,8 @@ fun FlashScreen(vm: MainViewModel) {
         AlertDialog(
             onDismissRequest = { deleteFileTarget = null },
             icon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("删除文件") },
-            text = { Text("将删除本地文件记录和已下载文件：\n${item.name}") },
+            title = { Text(stringResource(R.string.flash_delete_file)) },
+            text = { Text(stringResource(R.string.flash_delete_file_msg, item.name)) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -287,7 +1118,7 @@ fun FlashScreen(vm: MainViewModel) {
                         deleteFileTarget = null
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) { Text("删除") }
+                ) { Text(stringResource(R.string.delete)) }
             },
             dismissButton = {
                 TextButton(onClick = { deleteFileTarget = null }) { Text(stringResource(R.string.cancel)) }
@@ -299,25 +1130,40 @@ fun FlashScreen(vm: MainViewModel) {
         AlertDialog(
             onDismissRequest = { deleteWorkflowTarget = null },
             icon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("删除工作流记录") },
+            title = {
+                Text(
+                    if (group.runId == PREBUILT_GKI_RUN_ID) {
+                        stringResource(R.string.flash_delete_prebuilt_files)
+                    } else {
+                        stringResource(R.string.flash_delete_workflow_record)
+                    }
+                )
+            },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        "将删除此工作流在 ABK 中缓存的产物记录，并删除本地已下载文件。\n\n工作流 ${
-                            if (group.runNumber > 0) "#${group.runNumber}" else "#${group.runId}"
-                        }"
+                        if (group.runId == PREBUILT_GKI_RUN_ID) {
+                            stringResource(R.string.flash_delete_prebuilt_msg)
+                        } else {
+                            stringResource(
+                                R.string.flash_delete_workflow_msg,
+                                if (group.runNumber > 0) "#${group.runNumber}" else "#${group.runId}"
+                            )
+                        }
                     )
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { deleteRemoteWorkflowRun = !deleteRemoteWorkflowRun },
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = deleteRemoteWorkflowRun,
-                            onCheckedChange = { deleteRemoteWorkflowRun = it }
-                        )
-                        Text("同时删除远程 GitHub Actions 工作流记录")
+                    if (group.runId > 0) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { deleteRemoteWorkflowRun = !deleteRemoteWorkflowRun },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = deleteRemoteWorkflowRun,
+                                onCheckedChange = { deleteRemoteWorkflowRun = it }
+                            )
+                            Text(stringResource(R.string.flash_delete_remote_workflow))
+                        }
                     }
                 }
             },
@@ -327,12 +1173,12 @@ fun FlashScreen(vm: MainViewModel) {
                         val targetRunId = group.runId
                         val shouldDeleteRemoteRun = deleteRemoteWorkflowRun
                         vm.deleteWorkflowArtifacts(targetRunId, shouldDeleteRemoteRun)
-                        if (selectedRunId == targetRunId) selectedRunId = null
+                        if (selectedRunId == targetRunId) returnToTopList()
                         deleteWorkflowTarget = null
                         deleteRemoteWorkflowRun = false
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) { Text("删除") }
+                ) { Text(stringResource(R.string.delete)) }
             },
             dismissButton = {
                 TextButton(onClick = {
@@ -359,676 +1205,757 @@ fun FlashScreen(vm: MainViewModel) {
         )
     }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.surface,
-        topBar = { ExpressiveTopBar(title = if (rootGranted) stringResource(R.string.flash_title) else "文件") }
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            contentPadding = PaddingValues(bottom = 96.dp)
-        ) {
-            if (selectedGroup == null) {
+    parameterTarget?.let { group ->
+        val run = recentRunById[group.runId]
+        if (!group.shouldShowParameterDetails(run)) {
+            LaunchedEffect(group.runId) { parameterTarget = null }
+        } else {
+            val runId = group.runId
+            LaunchedEffect(runId) {
+                vm.loadBuildParameterSummary(runId)
+            }
+            BuildParameterSummaryDialog(
+                group = group,
+                summary = state.buildParameterSummaries[runId],
+                loading = runId in state.loadingBuildParameterRunIds,
+                error = state.buildParameterErrors[runId],
+                onDismiss = { parameterTarget = null },
+                onRetry = { vm.loadBuildParameterSummary(runId, force = true) }
+            )
+        }
+    }
+
+    prebuiltParameterTarget?.let { release ->
+        PrebuiltParameterSummaryDialog(
+            release = release,
+            summary = remember(release.id, release.body) { parsePrebuiltGkiParameterSummary(release) },
+            onDismiss = { prebuiltParameterTarget = null }
+        )
+    }
+
+    BackHandler(enabled = ghostFailedVisible) {
+        ghostFailedPageBack.requestDismiss()
+    }
+
+    @Composable
+    fun FlashListContent(listScrollState: LazyListState) {
+        val workflowRefreshPresentation = rememberAbkInteractiveRefreshPresentation(
+            loading = state.isRefreshingRecentRuns
+        )
+        val showWorkflowRefreshLoading = workflowRefreshPresentation.showLoading
+        val prebuiltReleaseRefreshPresentation = rememberAbkInteractiveRefreshPresentation(
+            loading = state.isLoadingPrebuiltGkiReleases
+        )
+        val showPrebuiltReleaseRefreshLoading =
+            prebuiltReleaseRefreshPresentation.showLoading && state.prebuiltGkiReleases.isNotEmpty()
+        BlurScreenScaffold(
+            blurConfig = state.blurConfig,
+            containerColor = Color.Transparent,
+            topBar = {
+                ExpressiveTopBar(
+                    title = if (rootGranted) stringResource(R.string.flash_title) else stringResource(R.string.flash_files_title),
+                    scrollBehavior = scrollBehavior,
+                    enableBlur = state.blurEnabled
+                )
+            }
+        ) { topBarHeight ->
+            LazyColumn(
+                state = listScrollState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .padding(horizontal = AbkScreenHorizontalPadding),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(top = topBarHeight + 16.dp, bottom = 96.dp + outerPadding.calculateBottomPadding())
+            ) {
                 item {
                     FlashHero(
                         buildStatus = state.buildStatus,
                         availableCount = remoteArtifacts.size,
-                        downloadedCount = state.downloadedArtifacts.size,
+                        downloadedCount = workflowDownloadedArtifacts.size,
                         rootGranted = rootGranted
                     )
                 }
 
-                item {
-                    OutlinedButton(
-                        onClick = { vm.loadRecentRuns() },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(18.dp)
-                    ) {
-                        Icon(Icons.Default.Refresh, null, modifier = Modifier.size(17.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("联网刷新构建产物")
-                    }
-                }
-
-                if (workflowGroups.isNotEmpty()) {
-                    items(workflowGroups, key = { "workflow-${it.runId}" }) { group ->
-                        WorkflowRunCard(
-                            group = group,
-                            onClick = { selectedRunId = group.runId },
-                            onDelete = {
-                                deleteWorkflowTarget = group
-                                deleteRemoteWorkflowRun = false
-                            }
-                        )
-                    }
-                } else {
+                if (state.prebuiltGkiEnabled && state.isLoggedIn) {
                     item {
-                        ExpressiveEmptyState(
-                            title = if (rootGranted) "暂无可刷写产物" else "暂无可查看文件",
-                            subtitle = if (rootGranted) {
-                                "构建成功后，ABK 会联网同步并按工作流整理产物。"
-                            } else {
-                                "构建成功后，可在这里下载并查看产物文件。"
-                            },
-                            icon = Icons.Default.Inbox
+                        FlashContentTabs(
+                            active = activeContentTab,
+                            onSelect = { activeContentTab = it }
                         )
                     }
                 }
-            } else {
-                item {
-                    WorkflowDetailHeader(
-                        group = selectedGroup,
-                        onBack = ::returnToWorkflowList,
-                        onDelete = {
-                            deleteWorkflowTarget = selectedGroup
-                            deleteRemoteWorkflowRun = false
+
+                when (currentContentTab) {
+                    FlashContentTab.Workflows -> {
+                        item {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedButton(
+                                    onClick = {
+                                        workflowRefreshPresentation.beginRefresh()
+                                        vm.loadRecentRuns()
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    enabled = !state.isRefreshingRecentRuns
+                                ) {
+                                    Icon(Icons.Default.Refresh, null, modifier = Modifier.size(17.dp))
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(stringResource(R.string.flash_refresh_artifacts))
+                                }
+                                FlashFilterButton(
+                                    expanded = filterMenuExpanded,
+                                    onExpandedChange = { filterMenuExpanded = it },
+                                    filter = filter,
+                                    onFilterChange = { filter = it }
+                                )
+                            }
                         }
-                    )
-                }
 
-                artifactCategoryOrder.forEach { category ->
-                    val remoteInCategory = selectedGroup.remote.filter {
-                        DownloadUtils.classifyCategory(DownloadUtils.classifyArtifact(it.name)) == category
-                    }
-                    val matchedLocalPaths = remoteInCategory
-                        .flatMap { source -> selectedGroup.local.filter { DownloadUtils.matchesDownloadedArtifact(it, source) } }
-                        .map { it.filePath }
-                        .toSet()
-                    val localOnly = selectedGroup.local
-                        .filter { it.category == category && it.filePath !in matchedLocalPaths }
+                        if (workflowActiveDownloads.isNotEmpty() || state.pendingAutoDownloadRunId > 0L) {
+                            item {
+                                WorkflowDownloadManagementCard(
+                                    tasks = workflowActiveDownloads,
+                                    pendingRunId = state.pendingAutoDownloadRunId.takeIf { it > 0L },
+                                    pendingRunLabel = pendingAutoDownloadRun?.let(::workflowRunLabel)
+                                        ?: state.pendingAutoDownloadRunId
+                                            .takeIf { it > 0L }
+                                            ?.let { "#$it" },
+                                    onCancelTask = vm::cancelDownload,
+                                    onCancelPending = vm::cancelAutoDownloads
+                                )
+                            }
+                        }
 
-                    if (remoteInCategory.isNotEmpty() || localOnly.isNotEmpty()) {
-                        item("category-${selectedGroup.runId}-${category.name}") {
-                            CategoryHeader(category)
+                        when {
+                            showWorkflowRefreshLoading -> {
+                                item {
+                                    LoadingRow(stringResource(R.string.flash_refreshing_artifacts))
+                                }
+                            }
+                            visibleWorkflowGroups.isNotEmpty() -> {
+                                items(visibleWorkflowGroups, key = { "workflow-${it.runId}" }) { group ->
+                                    val run = recentRunById[group.runId]
+                                    val active = run?.isActive() == true
+                                    // Per-run dispatched config drives the kernel-kind + SUSFS chips.
+                                    // Only fall back to pendingDispatchedConfig for runs that ARE
+                                    // kernel-named (or have kernel artifacts) — otherwise the chip
+                                    // leaks the dispatched BakaSU variant onto Build ABK App /
+                                    // GetManager / Auto Trigger runs, making them visually
+                                    // indistinguishable from kernel builds in the Manager filter.
+                                    val dispatchedConfig = dispatchedConfigByRunId[group.runId]
+                                        ?: if (active && FlashWorkflowFilter.shouldUsePendingDispatchedConfig(
+                                                run,
+                                                group.hasKernelArtifact()
+                                            )
+                                        ) {
+                                            linkingDispatchedConfig
+                                        } else {
+                                            null
+                                        }
+                                    val isManagerPrimary = FlashWorkflowFilter.primaryKind(
+                                        run = run,
+                                        runTitle = group.runTitle,
+                                        hasKernelArtifact = group.hasKernelArtifact(),
+                                        hasManagerArtifact = group.hasManagerArtifact()
+                                    ) == WorkflowPrimary.Manager
+                                    val showParameterDetails = group.shouldShowParameterDetails(run)
+                                    val failedGhost = group.runId in state.sessionGhostFailedRuns &&
+                                        group.runId !in state.dismissedFailedRunIds
+                                    WorkflowRunCard(
+                                        group = group,
+                                        summary = state.buildParameterSummaries[group.runId],
+                                        showKernelBuildChips = !isManagerPrimary,
+                                        showParameterDetails = showParameterDetails,
+                                        dispatchedKernelVariant = dispatchedConfig?.kernelsuVariant,
+                                        dispatchedSusfsEnabled = dispatchedConfig?.let { !it.cancelSusfs },
+                                        active = active,
+                                        failedGhost = failedGhost,
+                                        cancelling = group.runId in state.cancellingWorkflowRunIds,
+                                        onClick = {
+                                            if (failedGhost) {
+                                                ghostFailedPageBack.resetProgress()
+                                                ghostFailedSheetRunId = group.runId
+                                            } else {
+                                                selectedRunId = group.runId
+                                                selectedPrebuiltReleaseId = null
+                                                onDetailPageVisibleChange(true)
+                                                navigatingToFlashDetail = true
+                                                navController.navigate(flashWorkflowRoute(group.runId))
+                                            }
+                                        },
+                                        onShowParameters = {
+                                            if (showParameterDetails) parameterTarget = group
+                                        },
+                                        onDelete = {
+                                            if (failedGhost) {
+                                                dismissingFailedRunId = group.runId
+                                            } else {
+                                                deleteWorkflowTarget = group
+                                                deleteRemoteWorkflowRun = false
+                                            }
+                                        },
+                                        onCancel = { vm.cancelWorkflowRun(group.runId) }
+                                    )
+                                }
+                            }
+                            allWorkflowGroups.isNotEmpty() -> {
+                                item {
+                                    ExpressiveEmptyState(
+                                        title = stringResource(R.string.flash_filter_empty),
+                                        subtitle = "",
+                                        icon = Icons.Default.FilterList
+                                    )
+                                }
+                            }
+                            else -> {
+                                item {
+                                    ExpressiveEmptyState(
+                                        title = if (rootGranted) {
+                                            stringResource(R.string.flash_empty_flash_title)
+                                        } else {
+                                            stringResource(R.string.flash_empty_files_title)
+                                        },
+                                        subtitle = if (rootGranted) {
+                                            stringResource(R.string.flash_empty_flash_desc)
+                                        } else {
+                                            stringResource(R.string.flash_empty_files_desc)
+                                        },
+                                        icon = Icons.Default.Inbox
+                                    )
+                                }
+                            }
                         }
                     }
 
-                    items(remoteInCategory, key = { "source-${it.id}" }) { artifact ->
-                        ArtifactSourceCard(
-                            artifact = artifact,
-                            downloadedFiles = selectedGroup.local.filter {
-                                DownloadUtils.matchesDownloadedArtifact(it, artifact)
-                            },
-                            progress = state.downloadProgress[artifact.id],
-                            autoDownloadEligible = state.autoDownload &&
-                                state.pendingAutoDownloadRunId == artifact.runId &&
-                                DownloadUtils.shouldAutoDownload(artifact),
-                            onDownload = { vm.downloadArtifact(artifact) },
-                            onCopyPath = ::copyDownloadedFilePath,
-                            onInstall = ::installManager,
-                            onFlash = {
-                                selectedItem = it
-                                showFlashConfirm = true
-                            },
-                            onDelete = { deleteFileTarget = it },
-                            allowRootActions = rootGranted
-                        )
-                    }
+                    FlashContentTab.PrebuiltGki -> {
+                        if (state.prebuiltGkiEnabled) {
+                            item {
+                                PrebuiltReleaseListHeader(
+                                    releaseCount = state.prebuiltGkiReleases.size,
+                                    isLoading = state.isLoadingPrebuiltGkiReleases,
+                                    onRefresh = {
+                                        prebuiltReleaseRefreshPresentation.beginRefresh()
+                                        vm.loadPrebuiltGkiReleases(force = true)
+                                    }
+                                )
+                            }
 
-                    items(localOnly, key = { "local-${it.filePath}" }) { artifact ->
-                        LocalOnlyArtifactCard(
-                            artifact = artifact,
-                            onCopyPath = ::copyDownloadedFilePath,
-                            onInstall = ::installManager,
-                            onFlash = {
-                                selectedItem = it
-                                showFlashConfirm = true
-                            },
-                            onDelete = { deleteFileTarget = it },
-                            allowRootActions = rootGranted
-                        )
+                            when {
+                                showPrebuiltReleaseRefreshLoading || state.isLoadingPrebuiltGkiReleases -> {
+                                    item {
+                                        LoadingRow(stringResource(R.string.flash_loading_release))
+                                    }
+                                }
+                                state.prebuiltGkiReleases.isEmpty() -> {
+                                    item {
+                                        ExpressiveEmptyState(
+                                            title = stringResource(R.string.flash_empty_prebuilt_title),
+                                            subtitle = stringResource(R.string.flash_empty_prebuilt_desc),
+                                            icon = Icons.Default.CloudDownload
+                                        )
+                                    }
+                                }
+                                else -> {
+                                    items(state.prebuiltGkiReleases, key = { "release-${it.id}" }) { release ->
+                                        PrebuiltReleaseCard(
+                                            release = release,
+                                            onClick = {
+                                                selectedPrebuiltReleaseId = release.id
+                                                selectedRunId = null
+                                                onDetailPageVisibleChange(true)
+                                                navigatingToFlashDetail = true
+                                                navController.navigate(flashPrebuiltRoute(release.id))
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            val localPrebuiltFiles = state.downloadedArtifacts.filter {
+                                it.runId == PREBUILT_GKI_RUN_ID
+                            }
+                            if (localPrebuiltFiles.isNotEmpty()) {
+                                item {
+                                    CategoryHeader(ArtifactCategory.KERNEL)
+                                }
+                                items(localPrebuiltFiles, key = { "prebuilt-local-${it.filePath}" }) { artifact ->
+                                    LocalOnlyArtifactCard(
+                                        artifact = artifact,
+                                        onCopyPath = ::copyDownloadedFilePath,
+                            onInstall = ::requestInstallManager,
+                            onFlash = ::requestFlash,
+                                        onDelete = { deleteFileTarget = it },
+                                        allowRootActions = rootGranted
+                                    )
+                                }
+                            }
+                        } else {
+                            item {
+                                ExpressiveEmptyState(
+                                    title = stringResource(R.string.flash_prebuilt_disabled_title),
+                                    subtitle = stringResource(R.string.flash_prebuilt_disabled_desc),
+                                    icon = Icons.Default.CloudOff
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
     }
-}
 
-@Composable
-private fun FlashHero(
-    buildStatus: BuildStatus,
-    availableCount: Int,
-    downloadedCount: Int,
-    rootGranted: Boolean
-) {
-    ExpressiveHeroCard(
-        title = if (rootGranted) "产物中心" else "文件中心",
-        subtitle = if (rootGranted) {
-            "先选工作流，再处理内核、管理器和模块。"
-        } else {
-            "部分激活状态下只提供产物下载和文件查看。"
-        },
-        icon = if (rootGranted) Icons.Default.FlashOn else Icons.Default.FolderOpen,
-        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-        badge = {
-            ExpressiveStatusChip(
-                label = "$availableCount 个源产物",
-                icon = Icons.Default.CloudDownload,
-                color = MaterialTheme.colorScheme.tertiary
-            )
-            ExpressiveStatusChip(
-                label = "$downloadedCount 个已下载",
-                icon = Icons.Default.Inventory2,
-                color = MaterialTheme.colorScheme.secondary
-            )
-            ExpressiveStatusChip(
-                label = when (buildStatus) {
-                    BuildStatus.SUCCESS -> "构建成功"
-                    BuildStatus.IN_PROGRESS -> "构建中"
-                    BuildStatus.QUEUED -> "排队中"
-                    BuildStatus.FAILURE -> "构建失败"
-                    BuildStatus.CANCELLED -> "已取消"
-                    BuildStatus.IDLE -> "等待构建"
-                },
-                icon = Icons.Default.RunCircle,
-                color = when (buildStatus) {
-                    BuildStatus.SUCCESS -> MaterialTheme.colorScheme.primary
-                    BuildStatus.FAILURE -> MaterialTheme.colorScheme.error
-                    else -> MaterialTheme.colorScheme.outline
+    val motionScheme = MaterialTheme.motionScheme
+    fun navEnter(forward: Boolean) = if (state.predictiveBackEnabled) {
+        fadeIn(animationSpec = motionScheme.defaultEffectsSpec()) +
+            slideInHorizontally(animationSpec = motionScheme.defaultSpatialSpec()) { width ->
+                if (forward) width / 3 else -width / 3
+            }
+    } else {
+        fadeIn(animationSpec = motionScheme.fastEffectsSpec())
+    }
+    fun navExit(forward: Boolean) = if (state.predictiveBackEnabled) {
+        fadeOut(animationSpec = motionScheme.fastEffectsSpec()) +
+            slideOutHorizontally(animationSpec = motionScheme.fastSpatialSpec()) { width ->
+                if (forward) -width / 3 else width / 3
+            }
+    } else {
+        fadeOut(animationSpec = motionScheme.fastEffectsSpec())
+    }
+
+    val ghostFailedRunId = ghostFailedSheetRunId
+    val ghostFailedRun = ghostFailedRunId?.let { id ->
+        state.sessionGhostFailedRuns[id] ?: recentRunById[id]
+    }
+    LaunchedEffect(ghostFailedRunId, ghostFailedRun) {
+        if (ghostFailedRunId != null && ghostFailedRun == null) {
+            ghostFailedSheetRunId = null
+        }
+    }
+    LaunchedEffect(ghostFailedRunId) {
+        val runId = ghostFailedRunId ?: return@LaunchedEffect
+        vm.loadWorkflowJobs(runId)
+        vm.loadFailedRunLogExcerpt(runId)
+        vm.watchLateArtifactsForFailedRun(runId)
+    }
+
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val childPageTopInset = outerPadding.calculateTopPadding()
+        val childPageBottomInset = outerPadding.calculateBottomPadding()
+        val childPageModifier = Modifier
+            .fillMaxWidth()
+            .height(maxHeight + childPageTopInset + childPageBottomInset)
+            .offset(y = -childPageTopInset)
+
+        NavHost(
+            navController = navController,
+            startDestination = FLASH_ROUTE_LIST,
+            modifier = Modifier.fillMaxSize(),
+            enterTransition = { navEnter(forward = true) },
+            exitTransition = { navExit(forward = true) },
+            popEnterTransition = {
+                if (state.predictiveBackEnabled) {
+                    fadeIn(animationSpec = motionScheme.fastEffectsSpec())
+                } else {
+                    navEnter(forward = false)
                 }
+            },
+            popExitTransition = {
+                if (state.predictiveBackEnabled) {
+                    ExitTransition.None
+                } else {
+                    navExit(forward = false)
+                }
+            }
+        ) {
+            composable(FLASH_ROUTE_LIST) {
+                LaunchedEffect(Unit) {
+                    selectedRunId = null
+                    selectedPrebuiltReleaseId = null
+                }
+                FlashListContent(flashListScrollState)
+            }
+            composable(
+                route = FLASH_ROUTE_WORKFLOW,
+                arguments = listOf(navArgument(FLASH_ARG_RUN_ID) { type = NavType.LongType })
+            ) { entry ->
+                val routeRunId = entry.arguments?.getLong(FLASH_ARG_RUN_ID) ?: return@composable
+                val group = allWorkflowGroups.firstOrNull { it.runId == routeRunId }
+                LaunchedEffect(routeRunId) {
+                    selectedRunId = routeRunId
+                    selectedPrebuiltReleaseId = null
+                }
+                val activeRun = recentRunById[routeRunId]?.takeIf { it.isActive() }
+                val isCancellingThis = routeRunId in state.cancellingWorkflowRunIds
+                // Single FlashDetailBackSurface with a Crossfade inside — so
+                // when a workflow finishes while the user is staring at the
+                // in-progress detail, the page fades over to the completed
+                // detail instead of jumping abruptly. Hold on the building
+                // page while a cancel is mid-flight so the user keeps
+                // seeing the "Workflow отменяется…" spinner instead of
+                // bouncing into the empty-state for a split second.
+                val keepBuildingForCancel = isCancellingThis &&
+                    (group == null || group.remote.isEmpty())
+                val buildingRun = activeRun
+                    ?: if (keepBuildingForCancel) recentRunById[routeRunId] else null
+                val showBuilding = buildingRun != null &&
+                    (activeRun != null || isCancellingThis)
+                val minuteHandController = remember(routeRunId) { MinuteHandController() }
+                MinuteHandControllerHost(minuteHandController)
+                var wasShowingBuilding by remember(routeRunId) { mutableStateOf(false) }
+                LaunchedEffect(routeRunId, showBuilding, activeRun?.id) {
+                    when {
+                        showBuilding && !wasShowingBuilding && activeRun != null ->
+                            minuteHandController.beginSpinning()
+                        !showBuilding && wasShowingBuilding ->
+                            minuteHandController.beginSettle()
+                    }
+                    if (wasShowingBuilding && !showBuilding) {
+                        val finishedRun = recentRunById[routeRunId]
+                        if (finishedRun?.isFailedFlashRun() == true) {
+                            ghostFailedPageBack.resetProgress()
+                            ghostFailedSheetRunId = routeRunId
+                        } else {
+                            val retryWhenEmpty = when (finishedRun?.conclusion) {
+                                "cancelled" -> false
+                                "success" -> true
+                                else -> finishedRun?.status == "completed"
+                            }
+                            vm.refreshWorkflowArtifacts(
+                                routeRunId,
+                                autoDownload = state.autoDownload && retryWhenEmpty,
+                                retryWhenEmpty = retryWhenEmpty,
+                                force = true,
+                            )
+                        }
+                    }
+                    wasShowingBuilding = showBuilding
+                    if (!showBuilding) return@LaunchedEffect
+                    vm.refreshWorkflowArtifacts(routeRunId)
+                    while (true) {
+                        val burstActive = vm.isWorkflowStatusBurstActive(routeRunId)
+                        delay(if (burstActive) 3_000L else 20_000L)
+                        if (recentRunById[routeRunId]?.isActive() != true) break
+                        if (!burstActive) {
+                            vm.refreshWorkflowArtifacts(routeRunId)
+                        }
+                    }
+                }
+                FlashDetailBackSurface(
+                    predictiveBackEnabled = state.predictiveBackEnabled,
+                    outerPadding = outerPadding,
+                    backgroundUri = state.customBackgroundUri,
+                    backgroundImageEnabled = state.backgroundImageEnabled,
+                    onBack = ::returnToWorkflowList,
+                    backgroundContent = { FlashListContent(flashListScrollState) }
+                ) { dismiss ->
+                    Crossfade(
+                        targetState = showBuilding,
+                        animationSpec = tween(durationMillis = 450, easing = FastOutSlowInEasing),
+                        label = "flash-detail-build-state",
+                    ) { isBuilding ->
+                        if (isBuilding && buildingRun != null) {
+                            BuildingWorkflowDetail(
+                                run = buildingRun,
+                                group = group,
+                                progress = state.buildProgressByRunId[routeRunId]
+                                    ?: BuildProgressUtils.defaultFor(buildingRun),
+                                cancelling = isCancellingThis,
+                                downloadProgress = state.downloadProgress,
+                                autoDownload = state.autoDownload,
+                                pendingAutoDownloadRunId = state.pendingAutoDownloadRunId,
+                                onDownload = vm::downloadArtifact,
+                                        onCopyPath = ::copyDownloadedFilePath,
+                                        onInstall = ::requestInstallManager,
+                                        onFlash = ::requestFlash,
+                                onDelete = { deleteFileTarget = it },
+                                allowRootActions = rootGranted,
+                                unlinkedWorkflowTitle = unlinkedWorkflowTitle,
+                                onBack = dismiss,
+                                onCancel = { cancelConfirmRunId = routeRunId },
+                                onCancelDownload = vm::cancelDownload,
+                                onCancelAutoDownload = vm::cancelAutoDownloads,
+                                minuteHandController = minuteHandController,
+                            )
+                        } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .statusBarsPadding()
+                            .padding(horizontal = AbkScreenHorizontalPadding),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(bottom = 32.dp)
+                    ) {
+                        if (group != null) {
+                            val detailRun = recentRunById[group.runId]
+                            val isManagerPrimary = FlashWorkflowFilter.primaryKind(
+                                run = detailRun,
+                                runTitle = group.runTitle,
+                                hasKernelArtifact = group.hasKernelArtifact(),
+                                hasManagerArtifact = group.hasManagerArtifact()
+                            ) == WorkflowPrimary.Manager
+                            val showParameterDetails = group.shouldShowParameterDetails(detailRun)
+                            item {
+                                WorkflowDetailHeader(
+                                    group = group,
+                                    showParameterDetails = showParameterDetails,
+                                    onBack = dismiss,
+                                    onShowParameters = {
+                                        if (showParameterDetails) parameterTarget = group
+                                    },
+                                    onDelete = {
+                                        deleteWorkflowTarget = group
+                                        deleteRemoteWorkflowRun = false
+                                    }
+                                )
+                            }
+
+                            val visibleCategories = if (isManagerPrimary) {
+                                listOf(ArtifactCategory.MANAGER)
+                            } else {
+                                artifactCategoryOrder
+                            }
+                            val runCreatedAt = detailRun?.createdAt?.takeIf { it.isNotBlank() }
+                                ?: group.runCreatedAt
+                            val runFinishedAt = detailRun?.updatedAt?.takeIf { it.isNotBlank() }
+                                ?: group.runUpdatedAt
+                            val elapsedAnchorCategory = visibleCategories.firstOrNull { category ->
+                                group.hasArtifactsInCategory(category)
+                            } ?: visibleCategories.first()
+
+                            visibleCategories.forEach { category ->
+                                val remoteInCategory = group.remote.filter {
+                                    DownloadUtils.classifyCategory(DownloadUtils.classifyArtifact(it.name)) == category
+                                }
+                                val matchedLocalPaths = remoteInCategory
+                                    .flatMap { source -> group.local.filter { DownloadUtils.matchesDownloadedArtifact(it, source) } }
+                                    .map { it.filePath }
+                                    .toSet()
+                                val localOnly = group.local
+                                    .filter { it.category == category && it.filePath !in matchedLocalPaths }
+
+                                if (remoteInCategory.isNotEmpty() || localOnly.isNotEmpty()) {
+                                    item("category-${group.runId}-${category.name}") {
+                                        WorkflowCategorySection(
+                                            group = group,
+                                            category = category,
+                                            showDuration = category == elapsedAnchorCategory,
+                                            createdAt = runCreatedAt,
+                                            finishedAt = runFinishedAt,
+                                            liveDuration = false,
+                                            minuteHandController = minuteHandController,
+                                            progress = null,
+                                            downloadProgress = state.downloadProgress,
+                                            autoDownload = state.autoDownload,
+                                            pendingAutoDownloadRunId = state.pendingAutoDownloadRunId,
+                                            onDownload = vm::downloadArtifact,
+                                            onCancelDownload = vm::cancelDownload,
+                                            onCancelAutoDownload = vm::cancelAutoDownloads,
+                                            showDownloadCancelActions = true,
+                                            onCopyPath = ::copyDownloadedFilePath,
+                                            onInstall = ::requestInstallManager,
+                                            onFlash = ::requestFlash,
+                                            onDelete = { deleteFileTarget = it },
+                                            allowRootActions = rootGranted,
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            item {
+                                ExpressiveEmptyState(
+                                    title = stringResource(R.string.flash_workflow_unavailable),
+                                    subtitle = stringResource(R.string.flash_workflow_unavailable_desc),
+                                    icon = Icons.Default.Inbox
+                                )
+                            }
+                        }
+                    }
+                    }
+                }
+                }
+            }
+            composable(
+                route = FLASH_ROUTE_PREBUILT,
+                arguments = listOf(navArgument(FLASH_ARG_RELEASE_ID) { type = NavType.LongType })
+            ) { entry ->
+                val releaseId = entry.arguments?.getLong(FLASH_ARG_RELEASE_ID) ?: return@composable
+                val release = state.prebuiltGkiReleases.firstOrNull { it.id == releaseId }
+                val selectedPrebuiltAssets = release?.let {
+                    state.prebuiltGkiAssetsByReleaseId[it.id].orEmpty()
+                }.orEmpty()
+                val selectedPrebuiltAssetsLoading = release?.id
+                    ?.let { it in state.loadingPrebuiltGkiAssetReleaseIds } == true
+                val prebuiltAssetRefreshPresentation = rememberAbkInteractiveRefreshPresentation(
+                    loading = selectedPrebuiltAssetsLoading
+                )
+                val showPrebuiltAssetRefreshLoading =
+                    prebuiltAssetRefreshPresentation.showLoading && selectedPrebuiltAssets.isNotEmpty()
+                var prebuiltFilter by remember(release?.id) {
+                    mutableStateOf(defaultPrebuiltFilter())
+                }
+                val filteredPrebuiltAssets = remember(selectedPrebuiltAssets, prebuiltFilter) {
+                    val candidates = selectedPrebuiltAssets.filter(::isPrebuiltGkiCandidateUi)
+                    if (prebuiltFilter.onlyMatches) {
+                        candidates.filter { prebuiltAssetMatchesFilter(it, prebuiltFilter) }
+                    } else {
+                        candidates
+                    }
+                }
+                val recommendedPrebuiltIds = remember(filteredPrebuiltAssets, state.recommendedBuildConfig) {
+                    recommendedPrebuiltAssetIdsForUi(filteredPrebuiltAssets, state.recommendedBuildConfig)
+                }
+                LaunchedEffect(releaseId) {
+                    selectedPrebuiltReleaseId = releaseId
+                    selectedRunId = null
+                }
+                LaunchedEffect(release?.id, state.prebuiltGkiEnabled) {
+                    if (release != null && state.prebuiltGkiEnabled) {
+                        vm.loadPrebuiltGkiAssets(release)
+                    }
+                }
+                FlashDetailBackSurface(
+                    predictiveBackEnabled = state.predictiveBackEnabled,
+                    outerPadding = outerPadding,
+                    backgroundUri = state.customBackgroundUri,
+                    backgroundImageEnabled = state.backgroundImageEnabled,
+                    onBack = ::returnToPrebuiltReleaseList,
+                    backgroundContent = { FlashListContent(flashListScrollState) }
+                ) { dismiss ->
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .statusBarsPadding()
+                            .padding(horizontal = AbkScreenHorizontalPadding),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(bottom = 32.dp)
+                    ) {
+                        if (release != null) {
+                            item {
+                                PrebuiltReleaseDetailHeader(
+                                    release = release,
+                                    sourceCount = selectedPrebuiltAssets.size,
+                                    visibleCount = filteredPrebuiltAssets.size,
+                                    onBack = dismiss,
+                                    onShowParameters = { prebuiltParameterTarget = release },
+                                    onRefresh = {
+                                        prebuiltAssetRefreshPresentation.beginRefresh()
+                                        vm.loadPrebuiltGkiAssets(release, force = true)
+                                    }
+                                )
+                            }
+
+                            item {
+                                PrebuiltGkiFilterCard(
+                                    filter = prebuiltFilter,
+                                    onFilterChange = { prebuiltFilter = it }
+                                )
+                            }
+
+                            when {
+                                showPrebuiltAssetRefreshLoading || selectedPrebuiltAssetsLoading -> {
+                                    item {
+                                        LoadingRow(stringResource(R.string.flash_loading_prebuilt, release.name))
+                                    }
+                                }
+                                filteredPrebuiltAssets.isEmpty() -> {
+                                    item {
+                                        ExpressiveEmptyState(
+                                            title = stringResource(R.string.flash_no_matching_assets),
+                                            subtitle = if (prebuiltFilter.onlyMatches) {
+                                                stringResource(R.string.flash_no_matching_assets_filtered)
+                                            } else {
+                                                stringResource(R.string.flash_no_recognized_prebuilt_assets)
+                                            },
+                                            icon = Icons.Default.Inbox
+                                        )
+                                    }
+                                }
+                                else -> {
+                                    items(filteredPrebuiltAssets, key = { "prebuilt-${it.id}" }) { asset ->
+                                        PrebuiltGkiAssetCard(
+                                            asset = asset,
+                                            recommended = asset.id in recommendedPrebuiltIds,
+                                            downloadedFiles = state.downloadedArtifacts.filter {
+                                                DownloadUtils.matchesDownloadedPrebuilt(it, asset)
+                                            },
+                                            progress = state.downloadProgress[DownloadUtils.prebuiltProgressKey(asset.id)],
+                                            onDownload = { vm.downloadPrebuiltGki(asset) },
+                                            onCopyPath = ::copyDownloadedFilePath,
+                                            onInstall = ::requestInstallManager,
+                                            onFlash = ::requestFlash,
+                                            onDelete = { deleteFileTarget = it },
+                                            allowRootActions = rootGranted
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            item {
+                                ExpressiveEmptyState(
+                                    title = stringResource(R.string.flash_release_unavailable),
+                                    subtitle = stringResource(R.string.flash_release_unavailable_desc),
+                                    icon = Icons.Default.CloudDownload
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        ghostFailedPageTransition.AnimatedVisibility(
+            visible = { it },
+            enter = fadeIn(animationSpec = motionScheme.defaultEffectsSpec()),
+            exit = childPageScrimExitTransition(state.predictiveBackEnabled, motionScheme),
+            modifier = childPageModifier,
+        ) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = ghostFailedPageBack.scrimAlpha))
             )
         }
-    )
-}
 
-@Composable
-private fun WorkflowRunCard(
-    group: WorkflowArtifactGroup,
-    onClick: () -> Unit,
-    onDelete: () -> Unit
-) {
-    val sourceCount = group.remote.size
-    val downloadedCount = group.local.size
-    val categories = artifactCategoryOrder.filter { category ->
-        group.remote.any { DownloadUtils.classifyCategory(DownloadUtils.classifyArtifact(it.name)) == category } ||
-            group.local.any { it.category == category }
-    }
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(26.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-                .animateContentSize(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ghostFailedPageTransition.AnimatedVisibility(
+            visible = { it },
+            enter = childPageOverlayEnterTransition(state.predictiveBackEnabled, motionScheme),
+            exit = childPageOverlayExitTransition(state.predictiveBackEnabled, motionScheme),
+            modifier = childPageModifier,
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            val run = ghostFailedRun
+            val runId = ghostFailedRunId
+            if (run != null && runId != null) {
                 Box(
                     modifier = Modifier
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), RoundedCornerShape(18.dp))
-                        .padding(9.dp),
-                    contentAlignment = Alignment.Center
+                        .fillMaxSize()
+                        .then(ghostFailedPageBack.backTransformModifier())
                 ) {
-                    Icon(Icons.Default.FolderSpecial, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-                }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        text = "工作流 ${if (group.runNumber > 0) "#${group.runNumber}" else "#${group.runId}"}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                    FlashDetailPageBackground(
+                        backgroundUri = state.customBackgroundUri,
+                        backgroundImageEnabled = state.backgroundImageEnabled,
                     )
-                    Text(
-                        text = group.runTitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                    FailedWorkflowDetail(
+                        run = run,
+                        jobs = state.workflowJobsByRunId[runId],
+                        jobsLoading = runId in state.workflowJobsLoading,
+                        jobsError = state.workflowJobsErrors[runId],
+                        logExcerpt = state.failedRunLogExcerpts[runId],
+                        logLoading = runId in state.failedRunLogLoading,
+                        onBack = ghostFailedPageBack::requestDismiss,
+                        onOpenGitHub = { openGithubRun(context, run.htmlUrl) },
+                        onRetryJobs = { vm.loadWorkflowJobs(runId, force = true) },
                     )
                 }
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "删除工作流")
-                }
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                ExpressiveStatusChip(label = "$sourceCount 个源产物", color = MaterialTheme.colorScheme.primary)
-                ExpressiveStatusChip(label = "$downloadedCount 个已下载", color = MaterialTheme.colorScheme.secondary)
-                categories.forEach {
-                    ExpressiveStatusChip(label = it.label(), color = MaterialTheme.colorScheme.surfaceTint)
-                }
             }
         }
     }
 }
 
-@Composable
-private fun WorkflowDetailHeader(
-    group: WorkflowArtifactGroup,
-    onBack: () -> Unit,
-    onDelete: () -> Unit
-) {
-    ExpressiveSectionCard(
-        title = "工作流 ${if (group.runNumber > 0) "#${group.runNumber}" else "#${group.runId}"}",
-        subtitle = group.runTitle,
-        icon = Icons.Default.FolderSpecial
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "返回")
-            }
-            Text(
-                text = "${group.remote.size} 个源产物 / ${group.local.size} 个已下载",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f)
-            )
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "删除工作流")
-            }
-        }
-    }
-}
-
-@Composable
-private fun CategoryHeader(category: ArtifactCategory) {
-    Row(
-        modifier = Modifier.padding(start = 4.dp, top = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Icon(category.icon(), null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-        Text(
-            category.label(),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-private fun ArtifactSourceCard(
-    artifact: BuildArtifact,
-    downloadedFiles: List<DownloadedArtifact>,
-    progress: Int?,
-    autoDownloadEligible: Boolean,
-    onDownload: () -> Unit,
-    onCopyPath: (DownloadedArtifact) -> Unit,
-    onInstall: (DownloadedArtifact) -> Unit,
-    onFlash: (DownloadedArtifact) -> Unit,
-    onDelete: (DownloadedArtifact) -> Unit,
-    allowRootActions: Boolean
-) {
-    val type = DownloadUtils.classifyArtifact(artifact.name)
-    val animatedProgress by animateFloatAsState(
-        targetValue = ((progress ?: 0) / 100f).coerceIn(0f, 1f),
-        label = "artifact-download"
-    )
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            ArtifactHeader(
-                icon = artifactIcon(type),
-                title = artifact.name,
-                subtitle = "${artifactTypeLabel(type)} · ${DownloadUtils.formatSize(artifact.sizeInBytes)}",
-                chip = if (autoDownloadEligible) "下次自动" else artifactTypeLabel(type)
-            )
-
-            when {
-                progress != null -> {
-                    LinearProgressIndicator(progress = { animatedProgress }, modifier = Modifier.fillMaxWidth())
-                    Text("下载中 $progress%", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                downloadedFiles.isEmpty() -> {
-                    Button(
-                        onClick = onDownload,
-                        shape = RoundedCornerShape(18.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        ),
-                        modifier = Modifier.fillMaxWidth().height(46.dp)
-                    ) {
-                        Icon(Icons.Default.Download, null, modifier = Modifier.size(17.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("下载")
-                    }
-                }
-                else -> {
-                    downloadedFiles.forEachIndexed { index, file ->
-                        if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        DownloadedOutputRow(
-                            artifact = file,
-                            onCopyPath = { onCopyPath(file) },
-                            onInstall = { onInstall(file) },
-                            onFlash = { onFlash(file) },
-                            onDelete = { onDelete(file) },
-                            allowRootActions = allowRootActions
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun LocalOnlyArtifactCard(
-    artifact: DownloadedArtifact,
-    onCopyPath: (DownloadedArtifact) -> Unit,
-    onInstall: (DownloadedArtifact) -> Unit,
-    onFlash: (DownloadedArtifact) -> Unit,
-    onDelete: (DownloadedArtifact) -> Unit,
-    allowRootActions: Boolean
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            ArtifactHeader(
-                icon = artifactIcon(artifact.type),
-                title = artifact.name,
-                subtitle = "${artifactTypeLabel(artifact.type)} · ${DownloadUtils.formatSize(artifact.sizeBytes)}",
-                chip = "本地文件"
-            )
-            DownloadedOutputRow(
-                artifact = artifact,
-                onCopyPath = { onCopyPath(artifact) },
-                onInstall = { onInstall(artifact) },
-                onFlash = { onFlash(artifact) },
-                onDelete = { onDelete(artifact) },
-                allowRootActions = allowRootActions
-            )
-        }
-    }
-}
-
-@Composable
-private fun ArtifactHeader(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    chip: String
-) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Icon(
-            icon,
-            null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp)
-        )
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        ExpressiveStatusChip(label = chip, color = MaterialTheme.colorScheme.primary)
-    }
-}
-
-@Composable
-private fun DownloadedOutputRow(
-    artifact: DownloadedArtifact,
-    onCopyPath: () -> Unit,
-    onInstall: () -> Unit,
-    onFlash: () -> Unit,
-    onDelete: () -> Unit,
-    allowRootActions: Boolean
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(
-                Icons.Default.CheckCircle,
-                null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(18.dp)
-            )
-            Column(Modifier.weight(1f)) {
-                Text(
-                    artifact.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    "${artifactTypeLabel(artifact.type)} · ${DownloadUtils.formatSize(artifact.sizeBytes)}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "删除文件",
-                    tint = MaterialTheme.colorScheme.error
-                )
-            }
-        }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(
-                onClick = onCopyPath,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.weight(1f).height(42.dp)
-            ) {
-                Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(17.dp))
-                Spacer(Modifier.width(4.dp))
-                Text("复制路径")
-            }
-            if (allowRootActions) {
-                when (artifact.type) {
-                    ArtifactType.KERNEL_IMG,
-                    ArtifactType.ANYKERNEL3,
-                    ArtifactType.SUSFS_MODULE -> Button(
-                        onClick = onFlash,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.weight(1f).height(42.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (artifact.type == ArtifactType.KERNEL_IMG) {
-                                MaterialTheme.colorScheme.error
-                            } else {
-                                MaterialTheme.colorScheme.primary
-                            }
-                        )
-                    ) {
-                        Icon(
-                            if (artifact.type == ArtifactType.SUSFS_MODULE) Icons.Default.Extension else Icons.Default.FlashOn,
-                            null,
-                            modifier = Modifier.size(17.dp)
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(flashButtonLabel(artifact.type))
-                    }
-                    ArtifactType.KSU_MANAGER -> Button(
-                        onClick = onInstall,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.weight(1f).height(42.dp)
-                    ) {
-                        Icon(Icons.Default.InstallMobile, null, modifier = Modifier.size(17.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("安装")
-                    }
-                    else -> {}
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun FlashTerminalDialog(
-    title: String,
-    running: Boolean,
-    success: Boolean?,
-    logLines: List<String>,
-    canReboot: Boolean,
-    onClose: () -> Unit,
-    onReboot: () -> Unit
-) {
-    val terminalScroll = rememberScrollState()
-    AlertDialog(
-        onDismissRequest = { if (!running) onClose() },
-        icon = {
-            when {
-                running -> CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                success == true -> Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary)
-                success == false -> Icon(Icons.Default.Error, null, tint = MaterialTheme.colorScheme.error)
-                else -> Icon(Icons.Default.Terminal, null)
-            }
-        },
-        title = { Text(if (running) "正在执行 · $title" else title) },
-        text = {
-            Surface(
-                modifier = Modifier.fillMaxWidth().heightIn(min = 190.dp, max = 360.dp),
-                shape = RoundedCornerShape(18.dp),
-                color = Color(0xFF101418)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(terminalScroll)
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    logLines.forEach { line ->
-                        Text(
-                            text = line,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontFamily = FontFamily.Monospace,
-                            color = if (line.startsWith("${'$'}")) Color(0xFF8DE3B0) else Color(0xFFE6EDF3)
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            if (running) {
-                TextButton(onClick = {}, enabled = false) { Text("执行中") }
-            } else {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = onClose) { Text(stringResource(R.string.close)) }
-                    if (canReboot) {
-                        Button(
-                            onClick = onReboot,
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                        ) {
-                            Icon(Icons.Default.RestartAlt, null, modifier = Modifier.size(17.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("重启")
-                        }
-                    }
-                }
-            }
-        }
-    )
-}
-
-private fun buildWorkflowGroups(
-    remoteArtifacts: List<BuildArtifact>,
-    downloadedArtifacts: List<DownloadedArtifact>
-): List<WorkflowArtifactGroup> {
-    val runIds = (remoteArtifacts.map { it.runId } + downloadedArtifacts.map { it.runId }).distinct()
-    return runIds.map { runId ->
-        val remote = remoteArtifacts.filter { it.runId == runId }
-        val local = downloadedArtifacts.filter { it.runId == runId }
-        val firstRemote = remote.firstOrNull()
-        val firstLocal = local.firstOrNull()
-        WorkflowArtifactGroup(
-            runId = runId,
-            runTitle = firstRemote?.runTitle?.ifBlank { null }
-                ?: firstLocal?.runTitle?.ifBlank { null }
-                ?: "未关联工作流",
-            runNumber = firstRemote?.runNumber ?: firstLocal?.runNumber ?: 0,
-            remote = remote,
-            local = local
-        )
-    }.sortedWith(
-        compareByDescending<WorkflowArtifactGroup> { it.runNumber }
-            .thenByDescending { it.runId }
-    )
-}
-
-private data class WorkflowArtifactGroup(
-    val runId: Long,
-    val runTitle: String,
-    val runNumber: Int,
-    val remote: List<BuildArtifact>,
-    val local: List<DownloadedArtifact>
-)
-
-private fun artifactIcon(type: ArtifactType) = when (type) {
-    ArtifactType.KERNEL_PACKAGE -> Icons.Default.Inventory2
-    ArtifactType.KERNEL_IMG -> Icons.Default.Memory
-    ArtifactType.ANYKERNEL3 -> Icons.Default.Archive
-    ArtifactType.KSU_MANAGER -> Icons.Default.Shield
-    ArtifactType.SUSFS_MODULE -> Icons.Default.Extension
-    ArtifactType.OTHER -> Icons.Default.InsertDriveFile
-}
-
-private fun artifactTypeLabel(type: ArtifactType) = when (type) {
-    ArtifactType.KERNEL_PACKAGE -> "内核构建包"
-    ArtifactType.KERNEL_IMG -> "内核镜像"
-    ArtifactType.ANYKERNEL3 -> "AnyKernel3 刷写包"
-    ArtifactType.KSU_MANAGER -> "KernelSU 管理器"
-    ArtifactType.SUSFS_MODULE -> "SUSFS 模块"
-    ArtifactType.OTHER -> "其他文件"
-}
-
-private fun flashButtonLabel(type: ArtifactType) = when (type) {
-    ArtifactType.KERNEL_IMG -> "刷写"
-    ArtifactType.ANYKERNEL3 -> "刷入 AK3"
-    ArtifactType.SUSFS_MODULE -> "安装模块"
-    else -> "执行"
-}
-
-private fun flashOperationLabel(type: ArtifactType) = when (type) {
-    ArtifactType.KERNEL_IMG -> "刷写 boot 镜像"
-    ArtifactType.ANYKERNEL3 -> "刷入 AnyKernel3"
-    ArtifactType.SUSFS_MODULE -> "安装模块"
-    else -> "执行"
-}
-
-private fun flashCommandPreview(item: DownloadedArtifact) = when (item.type) {
-    ArtifactType.KERNEL_IMG -> "dd boot <- ${item.name}"
-    ArtifactType.ANYKERNEL3 -> "flash-ak3 ${item.name}"
-    ArtifactType.SUSFS_MODULE -> "install-module ${item.name}"
-    else -> "run ${item.name}"
-}
-
-private val artifactCategoryOrder = listOf(
-    ArtifactCategory.KERNEL,
-    ArtifactCategory.MANAGER,
-    ArtifactCategory.MODULE
-)
-
-private fun ArtifactCategory.label(): String = when (this) {
-    ArtifactCategory.KERNEL -> "内核产物"
-    ArtifactCategory.MANAGER -> "管理器"
-    ArtifactCategory.MODULE -> "模块"
-}
-
-private fun ArtifactCategory.icon(): ImageVector = when (this) {
-    ArtifactCategory.KERNEL -> Icons.Default.Memory
-    ArtifactCategory.MANAGER -> Icons.Default.Shield
-    ArtifactCategory.MODULE -> Icons.Default.Extension
-}
+private fun formatManifestFeatureMap(values: Map<String, Any?>): String =
+    values.entries
+        .sortedBy { it.key }
+        .joinToString(", ") { (key, value) -> "$key=${value ?: "null"}" }

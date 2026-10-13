@@ -52,11 +52,11 @@ on:
         required: true
         type: choice
         options:
+          - None
           - Official
-          #- Next
           - SukiSU
-          - ReSukiSU
-        default: ReSukiSU
+          - BakaSU
+        default: BakaSU
       kernelsu_branch:
         description: "KSU 分支"
         required: true
@@ -64,10 +64,15 @@ on:
         options:
           - Stable(标准)
           - Dev(开发)
-          - Other(其他/指定)
+          - Latest(最新)
+          - Custom(自定义)
         default: Stable(标准)
 
       # ==================== 可选配置 ====================
+      custom_ref:
+        description: "自定义引用 (仅在KSU分支为'Custom(自定义)'时使用)"
+        required: false
+        type: string
       version:
         description: "自定义版本名 (可选)"
         required: false
@@ -77,6 +82,19 @@ on:
         required: false
         type: string
         default: "Sun Dec 01 08:10:00 UTC 2024"
+
+      # ==================== 虚拟化支持配置 ====================
+      virtualization_support:
+        description: "虚拟化支持 (5.10~6.6: 槽位补丁, 6.12: 开/关)"
+        required: false
+        type: choice
+        options:
+          - "off"
+          - "on"
+          - "678"
+          - "123"
+          - "345"
+        default: "off"
 
       # ==================== 功能开关 ====================
       use_zram:
@@ -92,6 +110,16 @@ on:
       use_ddk:
         description: "启用 DDK 防格机 LSM"
         required: true
+        type: boolean
+        default: false
+      use_ntsync:
+        description: "启用 NTsync"
+        required: false
+        type: boolean
+        default: false
+      use_networking:
+        description: "启用网络增强（IPSet + BBR）"
+        required: false
         type: boolean
         default: false
       use_kpm:
@@ -117,12 +145,12 @@ on:
 
       # ==================== ZRAM 扩展选项 ====================
       zram_full_algo:
-        description: "启用 ZRAM 完整算法支持（LZO/LZ4/LZ4HC/LZ4K/LZ4KD/DEFLATE/842/ZSTD，默认 lzo-rle）"
+        description: "启用 ZRAM 完整算法支持（6.12 自动跳过 legacy LZ4K/LZ4KD/LZ4K_OPLUS）"
         required: false
         type: boolean
         default: false
       zram_extra_algos:
-        description: "自定义 ZRAM 算法（逗号分隔，如 lzo,lz4,deflate,zstd；仅在未启用完整算法时生效）"
+        description: "自定义 ZRAM 算法（逗号分隔，如 lzo,lz4,deflate,zstd；6.12 会忽略 lz4k/lz4kd/lz4k_oplus）"
         required: false
         type: string
         default: ""
@@ -135,13 +163,13 @@ on:
         default: ""
 
       # ==================== 自定义外部模块 ====================
-      use_custom_external_modules:
-        description: "启用自定义外部模块注入"
-        required: false
-        type: boolean
-        default: false
       custom_external_modules:
-        description: "自定义外部模块（链接;阶段，用 | 分隔多个，如 https://github.com/user/mod;after_patch|https://github.com/user/mod2;before_build）"
+        description: "自定义外部模块（兼容旧 repo;stage，也支持 module:repo;stage 与 set:repo#child;stage，用 | 分隔）"
+        required: false
+        type: string
+        default: ""
+      custom_kernel_options:
+        description: "自定义内核选项（每行一条 Kconfig/defconfig 片段）"
         required: false
         type: string
         default: ""
@@ -159,23 +187,29 @@ jobs:
       revision: ${{ inputs.revision || '' }}
       ksu_variant: ${{ inputs.kernelsu_variant }}
       ksu_branch: ${{ inputs.kernelsu_branch }}
+      custom_ref: ${{ inputs.custom_ref || '' }}
       version: ${{ inputs.version || '' }}
       build_time: ${{ inputs.build_time || '' }}
       use_zram: ${{ inputs.use_zram }}
       use_bbg: ${{ inputs.use_bbg }}
       use_ddk: ${{ inputs.use_ddk }}
+      use_ntsync: ${{ inputs.use_ntsync || false }}
+      use_networking: ${{ inputs.use_networking || false }}
       use_kpm: ${{ inputs.use_kpm }}
       use_rekernel: ${{ inputs.use_rekernel || false }}
       supp_op: ${{ inputs.supp_op || false }}
       enable_susfs: ${{ !inputs.cancel_susfs }}
+      virtualization_support: ${{ inputs.virtualization_support || 'off' }}
       zram_full_algo: ${{ inputs.zram_full_algo || false }}
       zram_extra_algos: ${{ inputs.zram_extra_algos || '' }}
       kpm_password: ${{ inputs.kpm_password || '' }}
-      use_custom_external_modules: ${{ inputs.use_custom_external_modules || false }}
       custom_external_modules: ${{ inputs.custom_external_modules || '' }}
+      custom_kernel_options: ${{ inputs.custom_kernel_options || '' }}
 
   get-ksu-manager:
     uses: ./.github/workflows/get-manager.yml
     secrets: inherit
     with:
       kernelsu_variant: ${{ inputs.kernelsu_variant }}
+      ksu_branch: ${{ inputs.kernelsu_branch }}
+      custom_ref: ${{ inputs.custom_ref || '' }}

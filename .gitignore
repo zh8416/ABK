@@ -27,6 +27,7 @@ hympfs-dev.diff
 ehthumbs.db
 Thumbs.db
 desktop.ini
+desktop/target/
 
 # Build outputs
 *.o
@@ -46,6 +47,7 @@ Image.gz
 Image.lz4
 *.img
 *.zip
+!modules/ntsync-ipset-helper/ntsync权限修复&ipset启用.zip
 
 # Temporary files
 *.temp
@@ -72,3 +74,24 @@ web/serve.sh
 web/dist/
 wild_kernel_comparison.md
 action_build_comparison.md
+
+# Gradle
+.gradle/
+build/
+!desktop/flutter_app/lib/src/features/build/
+!desktop/flutter_app/lib/src/features/build/*.dart
+app/.cxx/
+app/build/
+app/build/generated/
+
+# Android Studio
+gradle-daemon-jvm.properties
+.cxx/
+.externalNativeBuild/
+*.hprof
+captures/
+
+# Machine-local Android SDK path (use local.properties.example as template)
+local.properties
+local.properties.*
+!local.properties.example
